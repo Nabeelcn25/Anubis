@@ -1937,8 +1937,10 @@ Recommendations: Enhance EDR coverage, review Finance-VLAN network segmentation.
             const currentSelectedId = linkedIncidentIdSelect.value;
             linkedIncidentIdSelect.innerHTML = '<option value="">Select Incident ID</option>'; // Clear existing options
 
+            // Filter for incidents assigned to CURRENT_ANALYST that are new, investigating, or in progress
             const relevantIncidents = incidents.filter(inc => 
-                inc.status === 'New' || inc.status === 'Investigating' || inc.status === 'In Progress'
+                inc.assigned === CURRENT_ANALYST && // Added this filter
+                (inc.status === 'New' || inc.status === 'Investigating' || inc.status === 'In Progress')
             );
 
             relevantIncidents.forEach(inc => {
