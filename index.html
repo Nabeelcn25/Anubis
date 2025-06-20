@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluecyber Operations Dashboard</title>
+    <!-- Bootstrap 5 CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome CSS for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Custom styles for the dashboard */
+        body {
+            background-color: #f8f9fa; /* Light grey background */
+            font-family: 'Inter', sans-serif; /* Inter font as requested */
+            min-height: 100vh; /* Ensure body takes full height for sticky sidebar to work well */
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar {
+            background-color: #343a40 !important; /* Dark grey navbar */
+            border-radius: 0 0 0.5rem 0.5rem; /* Rounded bottom corners */
+            z-index: 1040; /* Ensure navbar is above everything except very high z-index modals */
+            position: sticky; /* Make navbar sticky at the very top */
+            top: 0;
+            width: 100%;
+        }
+        .navbar-brand, .nav-link {
+            color: #fff !important; /* White text for navbar items */
+        }
+
+        /* Container for main layout */
+        .dashboard-container {
+            flex-grow: 1; /* Allow container to grow and take available space */
+        }
+
+        /* Sticky Sidebar Styling */
+        .sidebar {
+            background-color: #2c3e50; /* Darker blue-grey sidebar */
+            color: #ecf0f1; /* Light text for sidebar */
+            padding-top: 18px; /* Slightly reduced padding */
+            border-radius: 0 0.5rem 0.5rem 0; /* Rounded right corners */
+            height: fit-content; /* Allow height to be determined by content, not fixed 100vh */
+            min-height: calc(100vh - 56px); /* Min-height from navbar to bottom of viewport for sticky effect */
+
+            /* Make it sticky, scrolls initially then sticks */
+            position: -webkit-sticky; /* For Safari */
+            position: sticky;
+            top: 56px; /* Offset by navbar height */
+            align-self: flex-start; /* For flex container alignment */
+            overflow-y: auto; /* Enable scrolling for sidebar content if it overflows */
+            z-index: 1020; /* Below navbar, above main content */
+        }
+
+        .sidebar a {
+            color: #ecf0f1;
+            text-decoration: none;
+            display: block;
+            padding: 9px 14px; /* Slightly reduced padding */
+            margin-bottom: 4px; /* Slightly reduced margin */
+            border-radius: 0.5rem; /* Rounded links */
+            transition: background-color 0.2s ease-in-out; /* Smooth hover */
+        }
+        .sidebar a:hover {
+            background-color: #34495e; /* Slightly lighter on hover */
+        }
+
+        /* Main Content Area adjustments */
+        .main-content {
+            padding: 12px; /* Further reduced padding */
+        }
+        .card {
+            border-radius: 0.75rem; /* More rounded card corners */
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1); /* Slightly stronger shadow */
+            margin-bottom: 15px; /* Further reduced margin for more compact look */
+            background-color: #fff;
+            border: none; /* Remove default border */
+        }
+        .card-header {
+            background-color: #e9ecef; /* Light grey header */
+            font-weight: bold;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+            border-radius: 0.75rem 0.75rem 0 0; /* Rounded top corners for header */
+            padding: 0.7rem 0.9rem; /* Further reduced padding */
+        }
+        .card-body {
+            padding: 0.9rem;
+        }
+        .metric-box {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* Rounded corners for metric boxes */
+            padding: 16px; /* Further reduced padding */
+            text-align: center;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid #dee2e6; /* Light border */
+        }
+        .metric-value {
+            font-size: 2.5em; /* Adjusted font size */
+            font-weight: bold;
+            color: #007bff; /* Primary blue */
+        }
+        .metric-label {
+            font-size: 0.9em; /* Adjusted font size */
+            color: #6c757d;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+            font-size: 0.88em; /* Slightly smaller table text */
+            padding: 0.6rem;
+        }
+        .badge {
+            padding: 0.3em 0.65em; /* Adjusted badge padding */
+            border-radius: 0.45rem; /* Slightly smaller rounded badge corners */
+            font-weight: 500;
+            line-height: 1; /* Ensure badge content is vertically centered */
+            white-space: nowrap; /* Prevent badge text from wrapping */
+        }
+        /* Custom badge colors for validation status */
+        .badge-pending-review { background-color: #0d6efd; color: #fff; } /* Blue for initial pending */
+        .badge-accepted { background-color: #28a745; color: #fff; } /* Green for accepted */
+        .badge-rejected { background-color: #dc3545; color: #fff; } /* Red for rejected */
+        .badge-needs-more-info { background-color: #ffc107; color: #333; } /* Yellow for needs more info */
+
+        /* Custom badge colors for severity/criticality */
+        .badge-critical { background-color: #dc3545; color: #fff; } /* Red */
+        .badge-high { background-color: #fd7e14; color: #fff; } /* Orange */
+        .badge-medium { background-color: #887a00; color: #fff; } /* Darker Yellow/Brown for better contrast */
+        .badge-low { background-color: #0d6efd; color: #fff; } /* Blue */
+        .badge-informational { background-color: #0e92a2; color: #fff; } /* Darker Cyan for informational */
+
+        /* Custom badge colors for Priority (1-5) */
+        .badge-priority-5 { background-color: #dc3545; color: #fff; } /* Red for Priority 5 (High) */
+        .badge-priority-4 { background-color: #fd7e14; color: #fff; } /* Orange for Priority 4 */
+        .badge-priority-3 { background-color: #887a00; color: #fff; } /* Darker Yellow/Brown for Priority 3 */
+        .badge-priority-2 { background-color: #0d6efd; color: #fff; } /* Blue for Priority 2 */
+        .badge-priority-1 { background-color: #0e92a2; color: #fff; } /* Darker Cyan for Priority 1 (Low) */
+
+
+        /* New Status Badge Colors (ensuring contrast for text) */
+        .badge-status-new { background-color: #6f42c1; color: #fff; } /* Purple */
+        .badge-status-investigating { background-color: #0dcaf0; color: #333; } /* Light Blue/Cyan with dark text */
+        .badge-status-in-progress { background-color: #ffc107; color: #333; } /* Yellow with dark text */
+        .badge-status-resolved { background-color: #28a745; color: #fff; } /* Green */
+        .badge-status-closed { background-color: #6c757d; color: #fff; } /* Grey */
+        .badge-status-handed-over { background-color: #6f42c1; color: #fff; } /* Purple for Handed Over */
+
+
+        /* Info icon styling */
+        .info-icon {
+            cursor: pointer;
+            color: #0d6efd; /* Blue info icon */
+            margin-left: 4px;
+            font-size: 0.95em;
+            transition: color 0.2s ease-in-out; /* Smooth hover effect */
+        }
+        .info-icon:hover {
+            color: #0a58ca; /* Darker blue on hover */
+        }
+        /* Report feedback styling */
+        .report-feedback {
+            font-size: 0.7em;
+            color: #6c757d;
+            margin-top: 2px;
+            border-left: 2px solid #dee2e6; /* Slightly thinner border */
+            padding-left: 6px;
+        }
+        .report-feedback.missing {
+            border-left-color: #ffc107;
+            color: #664d03; /* Darker yellow text */
+        }
+        .report-feedback.rejected {
+            border-left-color: #dc3545;
+            color: #842029; /* Darker red text */
+        }
+
+        /* Canvas sizing for charts */
+        canvas {
+            min-height: 220px; /* Reduced min-height for compactness */
+            height: 220px; /* Fixed height for all charts */
+            width: 100%; /* Ensure it takes full width of its parent */
+        }
+
+        /* Login Page Specific Styles */
+        .login-card {
+            max-width: 380px; /* Slightly narrower */
+            width: 90%;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            background-color: #fff;
+            border: none;
+        }
+        .login-card .form-control.rounded-pill {
+            padding: 0.65rem 1rem;
+        }
+        .login-card .btn-primary {
+            padding: 0.65rem 1.3rem;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .login-heading {
+            color: #343a40;
+            margin-bottom: 1.6rem;
+            font-size: 1.9rem;
+            font-weight: 700;
+        }
+        .login-logo {
+            font-size: 3rem;
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+        .login-message {
+            color: #dc3545; /* Red for error messages */
+            font-weight: 500;
+            margin-top: 0.7rem;
+            text-align: center;
+        }
+        /* Style for password toggle icon */
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+        }
+        .password-toggle:hover {
+            color: #343a40;
+        }
+
+        /* Ensure responsiveness for small screens */
+        @media (max-width: 767.98px) {
+            .sidebar {
+                position: static; /* Revert to normal flow for small screens */
+                height: auto;
+                padding-bottom: 20px;
+                border-radius: 0.5rem;
+                margin-bottom: 20px;
+                min-height: auto; /* Remove min-height for small screens */
+            }
+            .navbar-collapse {
+                background-color: #343a40; /* Dark background for collapsed menu */
+                padding: 10px;
+                border-radius: 0.5rem;
+            }
+        }
+
+        /* Footer Branding */
+        .dashboard-branding {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Page Container (Initially visible) -->
+    <div id="loginPage" class="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div class="login-card text-center">
+            <i class="fas fa-shield-alt login-logo"></i>
+            <h2 class="login-heading">Welcome to Bluecyber Dashboard</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <input type="text" class="form-control rounded-pill" id="username" placeholder="Username" required>
+                </div>
+                <div class="mb-4 password-container">
+                    <input type="password" class="form-control rounded-pill" id="password" placeholder="Password" required>
+                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+                </div>
+                <button type="submit" class="btn btn-primary rounded-pill w-100">Login</button>
+                <div id="loginMessage" class="login-message d-none">Invalid username or password.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Container (Initially hidden) -->
+    <div id="dashboardContainer" class="d-none flex-column flex-grow-1">
+        <!-- Navbar Section -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-shield-alt me-2"></i>Bluecyber Operations Dashboard
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#"><i class="fas fa-bell"></i> Alerts <span class="badge bg-danger ms-1" id="navbarAlertsBadge">5</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#"><i class="fas fa-user-circle"></i> Alex</a> <!-- Analyst name changed to Alex -->
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="logoutButton"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Row -->
+        <div class="container-fluid mt-3 dashboard-container">
+            <div class="row">
+                <!-- Sidebar Section -->
+                <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                    <div class="position-sticky pt-3">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="#overview">
+                                    <i class="fas fa-tachometer-alt me-2"></i> Dashboard Overview
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#incidents">
+                                    <i class="fas fa-exclamation-triangle me-2"></i> Incidents & Alerts
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#threat-intel">
+                                    <i class="fas fa-globe me-2"></i> Threat Intelligence
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#report-validation">
+                                    <i class="fas fa-file-invoice me-2"></i> Report Validation
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#submit-report">
+                                    <i class="fas fa-file-upload me-2"></i> Submit Report
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#user-profile">
+                                    <i class="fas fa-user-shield me-2"></i> My Profile
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#compliance">
+                                    <i class="fas fa-check-double me-2"></i> Compliance
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <!-- Main Content Area -->
+                <!-- Adjusted column classes and added offsets to push content right for sidebar -->
+                <main class="col-md-9 ms-sm-auto col-lg-10 offset-md-3 offset-lg-2 main-content">
+                    <h1 class="h2 mb-3">Bluecyber Operations Overview</h1>
+
+                    <!-- 1. Executive Summary & KPIs Section -->
+                    <section id="overview" class="mb-3">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="activeIncidents">7</div>
+                                    <div class="metric-label">Active Incidents</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="newAlerts">124</div>
+                                    <div class="metric-label">New Alerts (24h)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="mtd">15m</div>
+                                    <div class="metric-label">MTTD</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="mttr">2h 30m</div>
+                                    <div class="metric-label">MTTR</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3 g-2">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Alerts Trend (Last 7 Days)</div>
+                                    <div class="card-body">
+                                        <canvas id="alertsTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Incident Resolution Status</div>
+                                    <div class="card-body">
+                                        <canvas id="incidentStatusChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 2. Incident & Alert Management Section -->
+                    <section id="incidents" class="mb-3">
+                        <h2 class="h3 mb-2">Incident & Alert Queue</h2>
+                        <!-- Filters for Incident Table -->
+                        <div class="row mb-2 g-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control rounded-pill" id="incidentSearch" placeholder="Search ID, Source, Assigned...">
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select rounded-pill" id="incidentSeverityFilter">
+                                    <option value="">Filter by Severity</option>
+                                    <option value="Critical">Critical</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Informational">Informational</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select rounded-pill" id="incidentStatusFilter">
+                                    <option value="">Filter by Status</option>
+                                    <option value="New">New</option>
+                                    <option value="Investigating">Investigating</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="Closed">Closed</option>
+                                    <option value="Handed Over">Handed Over</option> <!-- New filter option -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Prioritized Incident List</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped caption-top">
+                                        <caption>List of active and recent incidents</caption>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Severity</th>
+                                                <th>Status</th>
+                                                <th>Source</th>
+                                                <th>
+                                                    Assigned
+                                                    <i class="fas fa-info-circle info-icon" title="The SOC Analyst currently responsible for this incident and their position in the team."></i>
+                                                </th>
+                                                <th>Last Updated</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="incidentTableBody">
+                                            <!-- Incident data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3 g-2">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Top Alert Categories</div>
+                                    <div class="card-body">
+                                        <canvas id="alertCategoriesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Alerts by Source</div>
+                                    <div class="card-body">
+                                        <canvas id="alertSourceChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 3. Threat Landscape & Intelligence Section -->
+                    <section id="threat-intel" class="mb-3">
+                        <h2 class="h3 mb-2">Threat Landscape & Intelligence</h2>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Top Attacker IPs (Last 24h)</div>
+                                    <div class="card-body">
+                                        <canvas id="attackerIPsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Vulnerability Status</div>
+                                    <div class="card-body">
+                                        <canvas id="vulnerabilityStatusChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 4. Report Validation & Acceptance Module Section -->
+                    <section id="report-validation" class="mb-3">
+                        <h2 class="h3 mb-2">Security Report Validation</h2>
+                        <!-- Filters for Report Table -->
+                        <div class="row mb-2 g-2">
+                            <div class="col-md-3">
+                                <input type="text" class="form-control rounded-pill" id="reportSearch" placeholder="Search ID, Submitter...">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select rounded-pill" id="reportTypeFilter">
+                                    <option value="">Filter by Type</option>
+                                    <option value="Incident Report">Incident Report</option>
+                                    <option value="Vulnerability Assessment">Vulnerability Assessment</option>
+                                    <option value="Daily Digest">Daily Digest</option>
+                                    <option value="Forensics Report">Forensics Report</option>
+                                    <option value="False Positive Report">False Positive Report</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select rounded-pill" id="reportCriticalityFilter">
+                                    <option value="">Filter by Criticality</option>
+                                    <option value="Critical">Critical</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Informational">Informational</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select rounded-pill" id="reportValidationStatusFilter">
+                                    <option value="">Filter by Validation Status</option>
+                                    <option value="Accepted">Accepted</option>
+                                    <option value="Rejected">Rejected</option>
+                                    <option value="Needs More Info">Needs More Info</option>
+                                    <option value="Pending Review">Pending Review</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3 g-2">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Report Validation Trend</div>
+                                    <div class="card-body">
+                                        <canvas id="reportValidationTrendChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Report Acceptance Rate</div>
+                                    <div class="card-body">
+                                        <canvas id="reportAcceptanceRateChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Reports Awaiting Validation (For Alex)</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped caption-top">
+                                        <caption>List of reports requiring review and re-submission by Alex</caption>
+                                        <thead>
+                                            <tr>
+                                                <th>Report ID</th>
+                                                <th>
+                                                    Report Type
+                                                    <i class="fas fa-info-circle info-icon" data-bs-toggle="modal" data-bs-target="#reportGuidelinesModal" data-report-type="general" title="Click to view general report guidelines."></i>
+                                                </th>
+                                                <th>Submitted By</th>
+                                                <th>Submission Date</th>
+                                                <th>
+                                                    Criticality
+                                                    <i class="fas fa-info-circle info-icon" title="The impact level of the security event (e.g., business disruption, data loss)."></i>
+                                                </th>
+                                                <th>
+                                                    Priority
+                                                    <i class="fas fa-info-circle info-icon" title="The urgency of this report (1=Low, 5=Critical) for processing/review."></i>
+                                                </th>
+                                                <th>
+                                                    Positiveness
+                                                    <i class="fas fa-info-circle info-icon" title="Indicates if the alert is a True Positive (actual threat) or False Positive (benign)."></i>
+                                                </th>
+                                                <th>
+                                                    Validation Status
+                                                    <i class="fas fa-info-circle info-icon" title="The current status of the report validation by the security lead."></i>
+                                                </th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="reportTableBody">
+                                            <!-- Report data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header">All Accepted Reports</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped caption-top">
+                                        <caption>List of all successfully validated reports</caption>
+                                        <thead>
+                                            <tr>
+                                                <th>Report ID</th>
+                                                <th>Report Type</th>
+                                                <th>Submitted By</th>
+                                                <th>Submission Date</th>
+                                                <th>Criticality</th>
+                                                <th>Priority</th>
+                                                <th>Positiveness</th>
+                                                <th>Validation Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="allAcceptedReportsTableBody">
+                                            <!-- All accepted report data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 4.1. Submit New Report Section -->
+                    <section id="submit-report" class="mb-3">
+                        <h2 class="h3 mb-2">Submit / Re-evaluate Report</h2>
+                        <div class="card">
+                            <div class="card-header" id="reportSubmissionCardHeader">Submit New Security Report</div>
+                            <div class="card-body">
+                                <form id="reportSubmissionForm">
+                                    <input type="hidden" id="reportIdToEdit" value="">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-6">
+                                            <label for="reportType" class="form-label">Report Type <span class="text-danger">*</span></label>
+                                            <select class="form-select rounded-pill" id="reportType" required>
+                                                <option value="">Select Report Type</option>
+                                                <option value="Incident Report">Incident Report</option>
+                                                <option value="Vulnerability Assessment">Vulnerability Assessment</option>
+                                                <option value="Daily Digest">Daily Digest</option>
+                                                <option value="Forensics Report">Forensics Report</option>
+                                                <option value="False Positive Report">False Positive Report</option>
+                                            </select>
+                                            <small class="form-text text-muted">Select the type of report you are submitting.</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="reportCriticality" class="form-label">
+                                                Criticality <span class="text-danger">*</span>
+                                                <i class="fas fa-info-circle info-icon" title="The impact level of the security event (e.g., business disruption, data loss)."></i>
+                                                <span id="criticalityColorDisplay" class="badge rounded-pill ms-2"></span>
+                                            </label>
+                                            <select class="form-select rounded-pill" id="reportCriticality" required>
+                                                <option value="">Select Criticality</option>
+                                                <option value="Critical">Critical</option>
+                                                <option value="High">High</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="Low">Low</option>
+                                                <option value="Informational">Informational</option>
+                                            </select>
+                                            <small class="form-text text-muted">Indicate the criticality level of the incident/finding.</small>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-6">
+                                            <label for="reportPriority" class="form-label">
+                                                Priority (5-High, 1-Low) <span class="text-danger">*</span>
+                                                <i class="fas fa-info-circle info-icon" title="A numerical priority (1=Low, 5=Critical) for this report based on urgency."></i>
+                                                <span id="priorityColorDisplay" class="badge rounded-pill ms-2"></span>
+                                            </label>
+                                            <select class="form-select rounded-pill" id="reportPriority" required>
+                                                <option value="">Select Priority</option>
+                                                <option value="5">5 (Critical)</option>
+                                                <option value="4">4 (High)</option>
+                                                <option value="3">3 (Medium)</option>
+                                                <option value="2">2 (Low)</option>
+                                                <option value="1">1 (Informational)</option>
+                                            </select>
+                                            <small class="form-text text-muted">A numerical priority for this report.</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="reportPositiveness" class="form-label">Positiveness <span class="text-danger">*</span></label>
+                                            <select class="form-select rounded-pill" id="reportPositiveness" required>
+                                                <option value="True Positive">True Positive</option>
+                                                <option value="False Positive">False Positive</option>
+                                            </select>
+                                            <small class="form-text text-muted">Is this a true security event or a false alarm?</small>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-6" id="incidentIdSelectGroup" style="display: none;">
+                                            <label for="linkedIncidentId" class="form-label">Linked Incident ID <span class="text-danger">*</span></label>
+                                            <select class="form-select rounded-pill" id="linkedIncidentId">
+                                                <option value="">Select Incident ID</option>
+                                            </select>
+                                            <small class="form-text text-muted">Select the incident this report pertains to.</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="submitTo" class="form-label">Submitted To</label>
+                                            <select class="form-select rounded-pill" id="submitTo">
+                                                <option value="">Select Team/Analyst</option>
+                                                <option value="Level 2 Analyst">Level 2 Analyst</option>
+                                                <option value="Incident Response Team">Incident Response Team</option>
+                                                <option value="Threat Intel Team">Threat Intel Team</option>
+                                                <option value="Security Management">Security Management</option>
+                                                <option value="Compliance Team">Compliance Team</option>
+                                            </select>
+                                            <small class="form-text text-muted">Specify the team or individual this report is submitted to.</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="reportContent" class="form-label">Report Content / Summary <span class="text-danger">*</span></label>
+                                        <textarea class="form-control rounded-3" id="reportContent" rows="8" placeholder="Example Incident Report (Linked to INC-${CURRENT_YEAR}-0101 for critical validation demo):
+Incident Summary: Unknown executable detected on Aliya's workstation, establishing C2 via Tor network.
+Affected Systems: Aliya-PC-01 (192.168.5.10), User: Aliya Rahman (Employee ID: 50021).
+Impact Assessment & Severity: Critical impact due to active C2.
+Actions Taken: Isolated Aliya-PC-01 from network. Blocked Tor exit node 185.x.x.x at perimeter firewall. Initiated full disk image for forensic analysis. Notified Incident Response Team for deeper dive.
+Evidence Collected: SIEM alert, EDR logs (suspicious.exe), Network Flow logs (TCP/443 to Tor exit node), DNS logs (DGA).
+Recommendations: Enhance EDR coverage, review Finance-VLAN network segmentation.
+" required></textarea>
+                                        <small class="form-text text-muted">
+                                            Your report is automatically reviewed for content and structure.
+                                            <strong>Use exact keywords and section titles as suggested by the examples or guidelines to ensure acceptance.</strong>
+                                            Refer to the info icon in 'Report Validation' section for acceptance criteria.
+                                        </small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary rounded-pill" id="submitReportButton">Submit Report</button>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 5. User Profile Overview Section -->
+                    <section id="user-profile" class="mb-3 d-none"> <!-- Initially hidden -->
+                        <h2 class="h3 mb-2">My Profile: Alex</h2>
+                        <div class="card mb-3">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-circle fa-5x text-secondary mb-3"></i>
+                                <h4 class="mb-1">Alex</h4>
+                                <p class="text-muted" id="alexPosition"></p> <!-- Dynamically updated by JS -->
+                                <p class="mb-1"><strong>Company ID:</strong> <span id="alexCompanyId"></span></p>
+                                <p class="mb-1"><strong>Company Mail:</strong> <span id="alexCompanyMail"></span></p>
+                                <p class="mb-3"><strong>User Mail:</strong> <span id="alexUserMail"></span></p>
+                                <!-- Removed Certification Progress -->
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexTotalIncidents">0</div>
+                                    <div class="metric-label">Total Incidents Assigned</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexActiveIncidents">0</div>
+                                    <div class="metric-label">Active Incidents</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexResolvedIncidents">0</div>
+                                    <div class="metric-label">Resolved Incidents</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexTotalReports">0</div>
+                                    <div class="metric-label">Total Reports Submitted</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexAcceptedReports">0</div>
+                                    <div class="metric-label">Reports Accepted</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-box">
+                                    <div class="metric-value" id="alexRejectedReports">0</div>
+                                    <div class="metric-label">Reports Rejected / Needs Info</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 6. Compliance & Audit Readiness Section (re-numbered after adding profile section) -->
+                    <section id="compliance" class="mb-3">
+                        <h2 class="h3 mb-2">Compliance & Audit Readiness</h2>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Overall Compliance Posture</div>
+                                    <div class="card-body">
+                                        <canvas id="compliancePostureChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Audit Findings by Criticality</div>
+                                    <div class="card-body">
+                                        <canvas id="auditFindingsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="dashboard-branding">
+                        Created using BreakTheWallEngine 1.4.7
+                    </div>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for details and guidelines -->
+
+    <!-- Incident Details Modal -->
+    <div class="modal fade" id="incidentDetailsModal" tabindex="-1" aria-labelledby="incidentDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-primary text-white rounded-top-3">
+                    <h5 class="modal-title" id="incidentDetailsModalLabel">Incident Details: <span id="modalIncidentId"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Severity:</strong> <span class="badge rounded-pill" id="modalSeverity"></span></div>
+                        <div class="col-sm-6"><strong>Status:</strong> <span class="badge rounded-pill" id="modalStatus"></span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Source:</strong> <span id="modalSource"></span></div>
+                        <div class="col-sm-6"><strong>Assigned To:</strong> <span id="modalAssigned"></span></div>
+                    </div>
+                    <p class="mb-2"><strong>Description:</strong> <span id="modalDescription"></span></p>
+                    <p class="mb-2"><strong>Affected Assets:</strong> <span id="modalAffectedAssets"></span></p>
+                    <p class="mb-4"><strong>Evidence:</strong> <span id="modalEvidence"></span></p>
+                    <h6>Actions Taken:</h6>
+                    <p id="modalActionsTaken" class="text-muted fst-italic">No actions recorded.</p>
+                </div>
+                <div class="modal-footer justify-content-between p-3">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary rounded-pill">Edit Incident</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Guidelines Modal -->
+    <div class="modal fade" id="reportGuidelinesModal" tabindex="-1" aria-labelledby="reportGuidelinesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-info text-white rounded-top-3">
+                    <h5 class="modal-title" id="reportGuidelinesModalLabel">Report Acceptance Criteria & Guidelines</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="reportGuidelinesContent">
+                        <!-- Content will be populated by JS based on clicked info icon -->
+                        <p>Select a report type (by clicking its info icon) to see specific acceptance criteria, or view the general guidelines below.</p>
+                    </div>
+                </div>
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report View Modal (for auto-validated reports) -->
+    <div class="modal fade" id="reportViewModal" tabindex="-1" aria-labelledby="reportViewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-dark text-white rounded-top-3">
+                    <h5 class="modal-title" id="reportViewModalLabel">Report Details: <span id="modalReportId"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Type:</strong> <span id="modalReportType"></span></div>
+                        <div class="col-sm-6"><strong>Criticality:</strong> <span class="badge rounded-pill" id="modalReportCriticality"></span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Submitted By:</strong> <span id="modalReportSubmittedBy"></span></div>
+                        <div class="col-sm-6"><strong>Priority:</strong> <span class="badge rounded-pill" id="modalReportPriority"></span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Positiveness:</strong> <span id="modalReportPositiveness"></span></div>
+                        <div class="col-sm-6"><strong>Submission Date:</strong> <span id="modalReportSubmissionDate"></span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Submitted To:</strong> <span id="modalReportSubmittedTo"></span></div>
+                    </div>
+                    <p><strong>Validation Status:</strong> <span class="badge rounded-pill" id="modalReportValidationStatus"></span></p>
+                    <div id="modalReportFeedback" class="report-feedback mt-3"></div>
+                    <hr>
+                    <h6>Report Content:</h6>
+                    <pre class="bg-light p-3 rounded-3" style="white-space: pre-wrap; word-break: break-word;" id="modalReportContent"></pre>
+                </div>
+                <div class="modal-footer justify-content-end p-3">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-evaluation Prompt Modal -->
+    <div class="modal fade" id="reEvaluationPromptModal" tabindex="-1" aria-labelledby="reEvaluationPromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-warning text-dark rounded-top-3">
+                    <h5 class="modal-title" id="reEvaluationPromptModalLabel"><i class="fas fa-exclamation-circle me-2"></i> Report Feedback for <span id="revalModalReportId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="lead" id="revalModalStatusText"></p>
+                    <p id="revalModalFeedback"></p>
+                    <p class="text-muted">Please address the feedback, then re-evaluate and resubmit your report.</p>
+                </div>
+                <div class="modal-footer justify-content-between p-3">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning rounded-pill" id="revalModalEditButton">
+                        <i class="fas fa-edit me-2"></i> Re-evaluate / Edit Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Priority Modal -->
+    <div class="modal fade" id="setPriorityModal" tabindex="-1" aria-labelledby="setPriorityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-primary text-white rounded-top-3">
+                    <h5 class="modal-title" id="setPriorityModalLabel">Set Report Priority</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="modalSetPriorityReportId">
+                    <div class="mb-3">
+                        <label for="modalReportPrioritySelect" class="form-label">Priority (5-High, 1-Low)</label>
+                        <select class="form-select rounded-pill" id="modalReportPrioritySelect">
+                            <option value="5">5 (Critical)</option>
+                            <option value="4">4 (High)</option>
+                            <option value="3">3 (Medium)</option>
+                            <option value="2">2 (Low)</option>
+                            <option value="1">1 (Informational)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary rounded-pill" id="savePriorityButton">Save Priority</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Incident Notification Modal for Alex after Login -->
+    <div class="modal fade" id="incidentNotificationModal" tabindex="-1" aria-labelledby="incidentNotificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-danger text-white rounded-top-3">
+                    <h5 class="modal-title" id="incidentNotificationModalLabel">
+                        <i class="fas fa-exclamation-circle me-2"></i> New High Priority Incidents Assigned!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="lead mb-3">Hello Alex,</p>
+                    <p>You have been assigned to the following high-priority incidents:</p>
+                    <div id="incidentsNotificationContent">
+                        <!-- Incidents will be populated here by JavaScript -->
+                    </div>
+                    <p class="text-muted mt-3">Please review the incident details and initiate your response promptly. Submit a report for each within 24 hours of assignment.</p>
+                </div>
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-primary rounded-pill" data-bs-dismiss="modal">Acknowledge</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Flag Modal -->
+    <div class="modal fade" id="successFlagModal" tabindex="-1" aria-labelledby="successFlagModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 shadow">
+                <div class="modal-header bg-success text-white rounded-top-3">
+                    <h5 class="modal-title" id="successFlagModalLabel">
+                        <i class="fas fa-check-circle me-2"></i> Report Submitted Successfully!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="lead mb-3">Great job, Alex!</p>
+                    <h4 class="text-success fw-bold">Flag: <span id="flagContent">flag{You_Finished_Anubis1}</span></h4>
+                    <p class="text-muted mt-3">Your report has been successfully validated and accepted.</p>
+                </div>
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-success rounded-pill" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Bootstrap 5 JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js for creating interactive graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <script>
+        // Use 'Inter' font family if available, fallback to sans-serif
+        document.documentElement.style.setProperty('--bs-font-sans-serif', 'Inter, sans-serif');
+
+        // --- Simulated Data for the Dashboard ---
+        // Analyst name constant
+        const CURRENT_ANALYST = 'Alex';
+        const CURRENT_YEAR = new Date().getFullYear(); // Get current year dynamically
+
+        // Simulated SOC Users with their positions
+        const socUsers = [
+            // Updated companyId for Alex
+            { name: 'Alex', position: 'SOC Analyst L1', companyMail: 'alex.doe@bluecyber.com', companyId: 'BLUECYBER-HQ-7890', userMail: 'alex.doe@bluecyber.com' },
+            { name: 'Bob', position: 'SOC Analyst L1' },
+            { name: 'Alice', position: 'Incident Responder' },
+            { name: 'David', position: 'Threat Hunter' },
+            { name: 'Charlie', position: 'Security Architect' }
+        ];
+
+        // Function to get user position by name
+        function getUserPosition(name) {
+            const user = socUsers.find(u => u.name === name);
+            return user ? user.position : 'Unknown Position';
+        }
+
+        // Helper to get current time for dynamic lastUpdated
+        function getCurrentDateTimeMinusMinutes(minutes) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - minutes);
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${mins}`;
+        }
+
+        // Incident data - Adjusted assignments to give Alex 2 tasks.
+        let incidents = [
+            // Adjusted lastUpdated for Alex's incidents to be recent
+            { id: `INC-${CURRENT_YEAR}-0101`, severity: 'Critical', status: 'Investigating', source: 'SIEM', assigned: 'Alex', lastUpdated: getCurrentDateTimeMinusMinutes(10), description: 'Unknown executable detected on Aliya\'s workstation, establishing command and control (C2) communication via a Tor network. High confidence of active adversary.', affectedAssets: 'User: Aliya Rahman (Employee ID: 50021), Endpoint: Aliya-PC-01 (192.168.5.10), Network Segment: Finance-VLAN (192.168.5.0/24)', evidence: 'SIEM alert (Rare Process Execution + Tor Connection), EDR logs (unauthorized process: suspicious.exe), Network Flow logs (TCP/443 to unusual external IP via Tor exit node: 185.x.x.x), DNS logs (DGA attempts).', actionsTaken: 'Isolated Aliya-PC-01 from network, Blocked Tor exit node IP at perimeter firewall, Initiated full disk image (FDI) of Aliya-PC-01 for forensic analysis, Notified Incident Response Team for deeper dive.' },
+            { id: `INC-${CURRENT_YEAR}-0102`, severity: 'High', status: 'Investigating', source: 'EDR', assigned: 'Alex', lastUpdated: getCurrentDateTimeMinusMinutes(30), description: 'User Aliya (Finance Dept) clicked on a sophisticated phishing link in a suspicious email, potentially leading to credential compromise. Immediate investigation and containment required.', affectedAssets: 'User: Aliya Rahman (Employee ID: 50021), Endpoint: Aliya-PC-01 (192.168.5.10), Mailbox: aliya.r@bluecyber.com', evidence: 'Email headers (spoofed sender), Malicious URL (pastebin.com/malicious-link), Endpoint logs (process creation, network connections post-click), DNS queries for suspicious domain, PCAP logs of network traffic after click.', actionsTaken: 'Aliya-PC-01 quarantined from network. Aliya\'s AD account password reset and MFA re-enrolled. Mailbox scanned for similar emails. Initial network traffic capture initiated. Incident reported to IR team for full scope assessment.' },
+            { id: `INC-${CURRENT_YEAR}-0103`, severity: 'Medium', status: 'New', source: 'IDS', assigned: 'Bob', lastUpdated: '2025-06-19 08:45', description: 'Multiple failed login attempts detected on VPN gateway from external IPs over a short period. Indicates possible brute force attack against user accounts.', affectedAssets: 'VPN Gateway: VPN-EDGE-01 (External IP: 203.0.113.5), User Accounts: Various (via VPN)', evidence: 'Authentication logs from RADIUS server, VPN logs (failed login attempts), Geo-IP data for source IPs.', actionsTaken: 'None yet, awaiting first responder assignment and initial triage.' },
+            { id: `INC-${CURRENT_YEAR}-0104`, severity: 'Low', status: 'Resolved', source: 'Vulnerability Scanner', assigned: 'Alice', lastUpdated: '2025-06-18 17:00', description: 'Informational web server vulnerability (Missing HTTP security headers: X-Content-Type-Options, X-Frame-Options, Content-Security-Policy). Could lead to minor information disclosure or clickjacking.', affectedAssets: 'Web-Server: WEB-APP-PROD-02 (172.16.0.20)', evidence: 'Vulnerability scan report (Nessus/OpenVAS output), Manual browser inspection.', actionsTaken: 'Configured missing security headers in Nginx configuration and verified patch deployment. Closed as remediated.' },
+            { id: `INC-${CURRENT_YEAR}-0105`, severity: 'High', status: 'In Progress', source: 'User Report', assigned: 'David', lastUpdated: '2025-06-19 11:00', description: 'User reported receiving a highly convincing phishing email impersonating HR, requesting personal financial details. Appears to be a credential harvesting attempt targeting employee information.', affectedAssets: 'User Mailbox: John.D@bluecyber.com, Email Gateway (potentially affected rules)', evidence: 'Full email headers (including SPF/DKIM/DMARC results), Malicious URL (onedrive.live.com/suspicious-doc), Screenshot of email content.', actionsTaken: 'Blocked sender domain and IP at email gateway. Issued internal security alert bulletin to all employees regarding the specific phishing campaign. Initiated review of email filtering rules.' },
+            { id: `INC-${CURRENT_YEAR}-0106`, severity: 'Medium', status: 'In Progress', source: 'Cloud Security', assigned: 'Alice', lastUpdated: '2025-06-19 12:45', description: 'Suspicious activity detected in a cloud storage bucket. Unusual large downloads from an unassociated IP address. Potential unauthorized access or data exfiltration attempt.', affectedAssets: 'AWS S3 Bucket: marketing-assets-public (Account ID: 123456789012), AWS IAM Role: MarketingDataReaderRole', evidence: 'CloudTrail logs (GetObject, ListBucket events from unusual IP), S3 access logs, VPC Flow Logs (network connections to S3 endpoint).', actionsTaken: 'Reviewed IAM policies attached to MarketingDataReaderRole, tightened S3 bucket permissions to enforce least privilege. Investigating source IP.' },
+            { id: `INC-${CURRENT_YEAR}-0107`, severity: 'Critical', status: 'New', source: 'DLP', assigned: 'Bob', lastUpdated: '2025-06-19 14:00', description: 'Sensitive financial data (client credit card numbers) exfiltration attempt detected via unsecured FTP connection to an external server. High priority investigation required to prevent data breach.', affectedAssets: 'Employee Laptop: EMP-HR-03 (192.168.10.25), External FTP Server (IP: 198.51.100.10, Port: 21)', evidence: 'Data Loss Prevention (DLP) alert logs (triggered rule: "Credit Card Data Exfil"), Network flow data (NetFlow/IPFIX), Firewall logs (FTP connection details).', actionsTaken: 'None yet, waiting for first responder to initiate incident response plan and forensics.' },
+            { id: `INC-${CURRENT_YEAR}-0108`, severity: 'Medium', status: 'Resolved', source: 'Vulnerability Scanner', assigned: 'Charlie', lastUpdated: '2025-06-19 16:30', description: 'New critical vulnerability identified on internal Linux server (CVE-2024-XXXX, High severity). Requires immediate assessment and patching plan.', affectedAssets: 'Linux Server: SRV-APP-LINUX02 (10.0.1.50)', evidence: 'Automated vulnerability scanner report (Qualys), OS patch management system logs.', actionsTaken: 'Assessed vulnerability impact. Opened change request for patching. Preparing a vulnerability assessment report.'}
+        ];
+
+        // Using a single array for all reports and filtering for display
+        // Added 'priority' field to report objects, mapped from initial 'criticality'
+        let allReports = [
+            { id: 'REP-001', type: 'Incident Report', submittedBy: 'Alex', submissionDate: '2025-06-18', submitTo: 'Level 2 Analyst', criticality: 'High', priority: 4, positiveness: 'True Positive', validationStatus: 'Accepted', feedback: 'Report is complete and well-structured.', content: `Incident report for INC-${CURRENT_YEAR}-0101: Unknown executable detected. Affected systems: Aliya-PC-01. Actions taken: isolated workstation, blocked Tor IP. Evidence collected: SIEM alert, EDR logs, Network flow, DNS logs. Recommendations: enhance EDR coverage, review network segmentation.`, linkedIncidentId: `INC-${CURRENT_YEAR}-0101` },
+            { id: 'REP-002', type: 'Vulnerability Assessment', submittedBy: 'Bob', submissionDate: '2025-06-17', submitTo: 'Security Management', criticality: 'Medium', priority: 3, positiveness: 'True Positive', validationStatus: 'Accepted', feedback: 'Report accepted. Good detail on remediation.', content: 'Vulnerability assessment of external web applications completed. Found several medium-severity XSS vulnerabilities (CVE-2023-XYZ). Remediation recommendations provided for each, including input validation and output encoding. Tools used: OWASP ZAP, Burp Suite.' },
+            { id: 'REP-003', type: 'Daily Digest', submittedBy: 'Alex', submissionDate: '2025-06-19', submitTo: 'Level 2 Analyst', criticality: 'Low', priority: 2, positiveness: 'True Positive', validationStatus: 'Needs More Info', feedback: `Missing summary for critical incidents and detailed handover notes for INC-${CURRENT_YEAR}-0103. Please elaborate on current investigations.`, content: `Daily summary for 2025-06-19. Alerts processed: 150. Key incidents: INC-${CURRENT_YEAR}-0102 (phishing) currently investigating. Nothing major to report beyond routine alerts. Handover: Bob needs to assess INC-${CURRENT_YEAR}-0103 brute force attempt.`, linkedIncidentId: null },
+            { id: 'REP-004', type: 'Forensics Report', submittedBy: 'Alice', submissionDate: '2025-06-16', submitTo: 'Incident Response Team', criticality: 'High', priority: 4, positiveness: 'True Positive', validationStatus: 'Rejected', feedback: 'Chain of custody not clearly documented for collected artifacts. Hash values for evidence are missing.', content: `Forensics report for INC-${CURRENT_YEAR}-0104. Performed image acquisition of affected workstation. Found some suspicious files in temp directory (hash: abc123def456). Origin of files is unclear. Recommendations for further analysis provided.` },
+            { id: 'REP-005', type: 'Incident Report', submittedBy: 'David', submissionDate: '2025-06-19', submitTo: 'Incident Response Team', criticality: 'High', priority: 4, positiveness: 'True Positive', validationStatus: 'Accepted', feedback: 'Report accepted. Comprehensive details provided for INC-005.', content: `Incident report for INC-${CURRENT_YEAR}-0105: Phishing incident investigated. User clicked malicious link. Affected assets: John.D@bluecyber.com mailbox, user workstation. Evidence collected: full email headers, URL scan report from URLScan.io. Actions taken: blocked sender domain, user training initiated. Recommendations: enforce stronger email filtering.`, linkedIncidentId: `INC-${CURRENT_YEAR}-0105` },
+            { id: 'REP-006', type: 'False Positive Report', submittedBy: 'Alex', submissionDate: '2025-06-19', submitTo: 'Threat Intel Team', criticality: 'Low', priority: 2, positiveness: 'False Positive', validationStatus: 'Accepted', feedback: 'False Positive Report accepted. Good justification.', content: 'Alert for unusual login activity from a new legitimate VPN IP was a false positive (Alert ID: ALRT-7890). User confirmed legitimate access from home office. No evidence of compromise. Reason for false positive: legitimate login from previously unseen IP range. Proposed action: add IP range 192.168.1.0/24 to VPN trusted IPs. Evidence: user confirmation email, VPN access logs showing successful login.', linkedIncidentId: null },
+            { id: 'REP-007', type: 'Daily Digest', submittedBy: 'David', submissionDate: '2025-06-18', submitTo: 'Security Management', criticality: 'Medium', priority: 3, positiveness: 'True Positive', validationStatus: 'Accepted', feedback: 'Report is comprehensive and concise.', content: `Daily digest for 2025-06-18. Key incidents: INC-${CURRENT_YEAR}-0104 resolved. Top alerts: 50 brute force attempts on FTP server. Threat intel: New ransomware variant identified (Ryuk V2). Handover notes: Bob needs to follow up on INC-${CURRENT_YEAR}-0103.` , linkedIncidentId: null},
+            { id: 'REP-008', type: 'Vulnerability Assessment', submittedBy: 'Charlie', submissionDate: '2025-06-19', submitTo: 'Compliance Team', criticality: 'Medium', priority: 3, positiveness: 'True Positive', validationStatus: 'Needs More Info', feedback: 'Report missing remediation steps for CVE-2024-XXXX and a clear impact statement. Please revise.', content: `Vulnerability assessment for SRV-APP-LINUX02. Identified CVE-2024-XXXX (Critical). Scan results attached. No immediate impact observed. Tools: OpenVAS.` , linkedIncidentId: null}
+        ];
+
+        // --- Report Acceptance Criteria Definitions for Info Icons & Automated Validation ---
+        // Each report type now has a 'mandatoryKeywords' array for validation
+        const reportGuidelines = {
+            general: {
+                description: `These are general guidelines applicable to all security reports. Specific report types may have additional criteria.`,
+                criteria: `
+                    <h6>General Report Guidelines:</h6>
+                    <ul>
+                        <li><strong>Clarity & Conciseness:</strong> Reports must be easy to understand, avoiding unnecessary jargon.</li>
+                        <li><strong>Accuracy:</strong> All information presented must be factual and verified.</li>
+                        <li><strong>Completeness:</b> Include all relevant details necessary to understand the situation and actions.</li>
+                        <li><strong>Professionalism:</strong> Maintain a professional tone and adhere to grammar/spelling standards.</li>
+                        <li><strong>Timeliness:</strong> Submit reports within the designated timeframes for each type.</li>
+                        <li><strong>Evidence:</strong> Attach or clearly reference all supporting evidence (logs, screenshots, etc.).</li>
+                    </ul>
+                `
+            },
+            'Incident Report': {
+                description: `This outlines the key elements required for an Incident Report to be accepted by the Bluecyber lead or management.`,
+                criteria: `
+                    <ul>
+                        <li><strong>Incident Title & Summary:</strong> Clear, brief overview.</li>
+                        <li><strong>Affected Systems/Assets:</strong> Specific names/IPs, impact level.</li>
+                        <li><strong>Impact Assessment & Severity:</strong> Categorization (C, I, A) and business impact.</li>
+                        <li><strong>Attack Vector/Methodology:</b> How the incident occurred.</li>
+                        <li><strong>Actions Taken:</strong> Containment, Eradication, Recovery steps.</li>
+                        <li><strong>Evidence Collected:</b> Logs, forensic images, hashes, PCAP etc.</li>
+                        <li><strong>Recommendations/Next Steps:</strong> Preventative measures, follow-ups.</li>
+                        <li><strong class="text-danger">Crucially, for linked incidents, report must include details from the incident description, affected assets, evidence, and actions taken.</strong></li>
+                    </ul>
+                `,
+                // These are *base* mandatory keywords (conceptual sections). Specific entities are handled by dynamic validation.
+                mandatoryKeywords: [
+                    ["incident summary"],
+                    ["affected systems", "assets"],
+                    ["impact assessment", "severity"],
+                    ["actions taken", "containment", "eradication", "recovery"],
+                    ["evidence collected", "logs", "pcap"],
+                    ["recommendations", "next steps"]
+                ]
+            },
+            'Vulnerability Assessment': {
+                description: `Criteria for accepting a Vulnerability Assessment Report, ensuring thoroughness and actionable insights.`,
+                criteria: `
+                    <ul>
+                        <li><strong>Executive Summary & Overview:</b> High-level findings and risk posture.</li>
+                        <li><strong>Scope of Assessment & Tested Assets:</strong> What was tested (assets, networks, applications).</li>
+                        <li><strong>Identified Vulnerabilities & Findings:</strong> Detailed list including CVE ID (if applicable), description, severity, affected assets.</li>
+                        <li><strong>Remediation Recommendations & Actionable Steps:</b> Clear, prioritized, and actionable steps.</li>
+                        <li><strong>Tools Used:</b> For auditability.</li>
+                    </ul>
+                `,
+                mandatoryKeywords: [
+                    ["executive summary", "overview"],
+                    ["scope of assessment", "tested assets"],
+                    ["identified vulnerabilities", "findings"],
+                    ["remediation recommendations", "actionable steps"],
+                    ["tools used"]
+                ]
+            },
+            'Daily Digest': {
+                description: `Guidelines for the daily Bluecyber digest, ensuring it provides a concise yet comprehensive overview of the day's security posture.`,
+                criteria: `
+                    <ul>
+                        <li><strong>Key Incidents:</strong> Summary of new, ongoing, and resolved high-priority incidents.</li>
+                        <li><strong>Top Alerts & Alert Trends:</b> Most significant alerts or alert trends.</li>
+                        <li><strong>Threat Intelligence Updates & New Threats:</b> Any notable updates or new threats.</li>
+                        <li><strong>Handover Notes & Outstanding Actions:</strong> Critical tasks for the next shift.</li>
+                    </ul>
+                `,
+                mandatoryKeywords: [
+                    ["key incidents", "ongoing incidents", "resolved incidents"],
+                    ["top alerts", "alert trends"],
+                    ["threat intelligence updates", "new threats"],
+                    ["handover notes", "outstanding actions"]
+                ]
+            },
+            'Forensics Report': {
+                description: `Acceptance criteria for a detailed Forensics Report, crucial for investigations and potential legal proceedings.`,
+                criteria: `
+                    <ul>
+                        <li><strong>Case ID & Incident Overview:</strong> Context for the investigation.</li>
+                        <li><strong>Scope of Investigation & Systems Examined:</strong> What systems/data were examined.</li>
+                        <li><strong>Methodology Used & Tools Followed:</b> Tools and processes followed.</li>
+                        <li><strong>Findings & Technical Analysis:</strong> Detailed technical analysis, including indicators of compromise (IOCs).</li>
+                        <li><strong>Artifacts & Evidence Collected:</strong> List of collected evidence, their hash values, and chain of custody documentation.</li>
+                        <li><strong>Timeline of Events:</b> Reconstructed sequence of activities.</li>
+                        <li><strong>Conclusions & Recommendations:</strong> Supported by findings and evidence.</li>
+                    </ul>
+                `,
+                mandatoryKeywords: [
+                    ["case id", "incident overview"],
+                    ["scope of investigation", "systems examined"],
+                    ["methodology used", "tools followed"],
+                    ["findings", "technical analysis", "iocs"],
+                    ["artifacts", "evidence collected", "hash values"],
+                    ["timeline of events"],
+                    ["conclusions", "recommendations"]
+                ]
+            },
+            'False Positive Report': {
+                description: `Guidelines for reporting False Positives, ensuring clear identification and justification.`,
+                criteria: `
+                    <ul>
+                        <li><strong>Alert/Incident ID:</strong> Reference to the original alert or incident.</li>
+                        <li><strong>Reason for False Positive:</strong> Detailed explanation why it's a false positive.</li>
+                        <li><strong>Affected System/User:</strong> Specify where the false positive occurred.</li>
+                        <li><strong>Proposed Action:</b> How to prevent similar false positives in the future (e.g., rule tuning, whitelist).</li>
+                        <li><strong>Evidence:</strong> Supporting data confirming it's a false positive.</li>
+                    </ul>
+                `,
+                mandatoryKeywords: [
+                    ["alert id", "incident id", "original alert"],
+                    ["reason for false positive", "false positive reason"],
+                    ["affected system", "affected user"],
+                    ["proposed action", "prevention action"],
+                    ["evidence", "supporting data"]
+                ]
+            }
+        };
+
+        // --- Core Validation Logic (Simulated) ---
+        /**
+         * Simulates automatic validation of a report based on keywords, criticality, positiveness,
+         * and optionally, against a linked incident's details.
+         * @param {string} reportType - The type of the report (e.g., "Incident Report").
+         * @param {string} content - The full content of the report.
+         * @param {string} criticality - The criticality selected for the report.
+         * @param {number} priority - The numerical priority (1-5) selected for the report.
+         * @param {string} positiveness - The positiveness (True/False Positive) selected.
+         * @param {string} [linkedIncidentId=null] - The ID of the linked incident, if reportType is 'Incident Report'.
+         * @returns {{validationStatus: string, feedback: string}} Validation result.
+         */
+        function autoValidateReport(reportType, content, criticality, priority, positiveness, linkedIncidentId = null) {
+            const normalizedContent = content.toLowerCase();
+            const typeGuidelines = reportGuidelines[reportType];
+            let feedback = '';
+            let validationStatus = 'Accepted'; // Assume accepted initially
+
+            // Basic validation for criticality and positiveness presence
+            if (!criticality) {
+                return { validationStatus: 'Needs More Info', feedback: 'Criticality must be selected.' };
+            }
+            if (!priority || isNaN(priority)) { // Validate new priority field
+                return { validationStatus: 'Needs More Info', feedback: 'Priority must be selected.' };
+            }
+            if (!positiveness) {
+                 return { validationStatus: 'Needs More Info', feedback: 'Positiveness (True/False Positive) must be selected.' };
+            }
+
+            // Handle False Positive Report type and positiveness consistency
+            if (reportType === 'False Positive Report' && positiveness !== 'False Positive') {
+                return { validationStatus: 'Rejected', feedback: 'A "False Positive Report" must have "Positiveness" set to "False Positive". Please correct this.' };
+            }
+            if (reportType !== 'False Positive Report' && positiveness === 'False Positive') {
+                return { validationStatus: 'Needs More Info', feedback: `This report is marked as 'False Positive' but its type is '${reportType}'. Consider changing 'Report Type' to 'False Positive Report' for appropriate classification.` };
+            }
+
+            // --- Step 1: Check for general mandatory keywords (conceptual sections) for all report types ---
+            let conceptualMissingKeywords = [];
+            if (typeGuidelines && typeGuidelines.mandatoryKeywords) {
+                typeGuidelines.mandatoryKeywords.forEach(keywordGroup => {
+                    let foundInGroup = false;
+                    for (const keyword of keywordGroup) {
+                        if (normalizedContent.includes(keyword.toLowerCase())) {
+                            foundInGroup = true;
+                            break;
+                        }
+                    }
+                    if (!foundInGroup) {
+                        // Report the whole group if nothing found. For clearer feedback,
+                        // just report the first keyword of the group.
+                        conceptualMissingKeywords.push(keywordGroup[0]);
+                    }
+                });
+            } else {
+                // Fallback for unknown report types or no specific guidelines defined for them
+                if (content.length < 100) {
+                    return { validationStatus: 'Needs More Info', feedback: 'Report content is too short for a general report. Please provide more detail.' };
+                }
+            }
+
+            // If conceptual keywords are missing, set status and feedback initially
+            if (conceptualMissingKeywords.length > 0) {
+                validationStatus = 'Needs More Info';
+                feedback = `Missing key sections: ${[...new Set(conceptualMissingKeywords)].join(', ')}. Please ensure your report is comprehensive.`;
+            }
+
+
+            // --- Step 2: Specific entity validation for Incident Reports linked to an incident ---
+            if (reportType === 'Incident Report' && linkedIncidentId) {
+                const linkedIncident = incidents.find(inc => inc.id === linkedIncidentId);
+                if (!linkedIncident) {
+                    return { validationStatus: 'Needs More Info', feedback: `Linked Incident ID '${linkedIncidentId}' not found. Please select a valid incident.` };
+                }
+
+                const incidentDetailsText = [
+                    linkedIncident.description,
+                    linkedIncident.affectedAssets,
+                    linkedIncident.evidence,
+                    linkedIncident.actionsTaken
+                ].join(' ').toLowerCase();
+
+                let requiredEntities = new Set();
+                requiredEntities.add(linkedIncident.id.toLowerCase()); // Incident ID itself
+
+                // Refined Regex for valuable entities: IPs, Emails, System/Asset Names, Employee IDs, specific URLs/Domains
+                const entityPatterns = [
+                    /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, // IPv4 (e.g., 192.168.5.10)
+                    /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/g, // Email (e.g., aliya.r@bluecyber.com)
+                    // Specific system/asset name patterns for direct matches
+                    /\b(srv-prod-db\d+|aliya-pc-\d+|vpn-edge-\d+|k8s-app-\d+|emp-hr-\d+|web-app-prod-\d+|srv-app-linux\d+)\b/g,
+                    /\bemployee\s*id:?\s*(\d+)\b/g, // Employee IDs (e.g., "Employee ID: 50021", capturing the number)
+                    /\b(pastebin\.com\/malicious-link|onedrive\.live\.com\/suspicious-doc|bluecyber\.com)\b/g, // Specific URLs/Domains
+                    /\btor\s*network\b/g, // Tor network
+                    /\bc2\s*server\b/g, // C2 server
+                    /\bsuspicious\.exe\b/g, // suspicious.exe
+                    /\d{1,3}\.x\.x\.x\b/g, // 185.x.x.x (for Tor exit node)
+                    /\bfinance-vlan\b/g // Finance-VLAN
+                ];
+
+                entityPatterns.forEach(regex => {
+                    let match;
+                    while ((match = regex.exec(incidentDetailsText)) !== null) {
+                        // For employee ID, specifically format it for clarity in feedback
+                        if (regex.source.includes('employee\\s*id')) { // Check if the regex is for employee ID
+                             requiredEntities.add(`employee ID: ${match[1]}`);
+                        } else {
+                            requiredEntities.add(match[0]);
+                        }
+                    }
+                });
+
+                let specificEntitiesMissing = [];
+                Array.from(requiredEntities).forEach(entity => {
+                    // Check if report content contains the entity, handling variations for employee ID
+                    let entityInReport = false;
+                    if (entity.startsWith('employee ID:')) {
+                        const empIdNum = entity.split(':')[1].trim();
+                        if (normalizedContent.includes(`employee id: ${empIdNum}`) || normalizedContent.includes(`employeeid: ${empIdNum}`) || normalizedContent.includes(`employee ${empIdNum}`)) {
+                            entityInReport = true;
+                        }
+                    } else if (normalizedContent.includes(entity)) {
+                        entityInReport = true;
+                    }
+
+                    if (!entityInReport) {
+                        specificEntitiesMissing.push(entity);
+                    }
+                });
+
+                // If specific entities are missing, override previous feedback for general conceptual keywords
+                // as this is more critical and actionable for a linked incident report.
+                if (specificEntitiesMissing.length > 0) {
+                    validationStatus = 'Needs More Info';
+                    feedback = `Missing critical entities from linked incident '${linkedIncidentId}': ${[...new Set(specificEntitiesMissing)].join(', ')}. Please ensure your report explicitly mentions these.`;
+                }
+            }
+
+            // Final content length check, only if no other 'Needs More Info' or 'Rejected' status set
+            if (validationStatus === 'Accepted' && content.length < 200 && reportType !== 'Daily Digest') {
+                validationStatus = 'Needs More Info';
+                feedback = 'Report content is a bit brief. While key aspects are present, consider expanding for more context.';
+            }
+
+            // Simulate a small chance of outright rejection for nuanced reasons, only if currently 'Accepted'
+            if (validationStatus === 'Accepted' && Math.random() < 0.05) {
+                validationStatus = 'Rejected';
+                feedback = 'Report rejected. The overall structure or flow of information does not meet quality standards. Please re-organize and re-submit.';
+            }
+
+            return { validationStatus: validationStatus, feedback: feedback };
+        }
+
+
+        // --- Render Functions to Populate HTML Tables ---
+
+        /**
+         * Returns the appropriate Bootstrap badge class for a given status.
+         * @param {string} status - The status string (e.g., 'New', 'Investigating', 'Resolved').
+         * @returns {string} The CSS class for the badge.
+         */
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'New': return 'badge-status-new';
+                case 'Investigating': return 'badge-status-investigating';
+                case 'In Progress': return 'badge-status-in-progress';
+                case 'Resolved': return 'badge-status-resolved';
+                case 'Closed': return 'badge-status-closed';
+                case 'Handed Over': return 'badge-status-handed-over'; // New status
+                default: return 'badge-info-status'; // Fallback for any unhandled status
+            }
+        }
+
+        /**
+         * Returns the appropriate Bootstrap badge class for a given priority (1-5).
+         * @param {number} priority - The numerical priority (1-5).
+         * @returns {string} The CSS class for the badge.
+         */
+        function getPriorityBadgeClass(priority) {
+            switch (parseInt(priority)) {
+                case 5: return 'badge-priority-5'; // Critical
+                case 4: return 'badge-priority-4'; // High
+                case 3: return 'badge-priority-3'; // Medium
+                case 2: return 'badge-priority-2'; // Low
+                case 1: return 'badge-priority-1'; // Informational
+                default: return 'badge-info-status'; // Fallback
+            }
+        }
+
+
+        /**
+         * Populates the Incident List table with simulated incident data.
+         * Applies filters from input fields.
+         */
+        function renderIncidents() {
+            const tableBody = document.getElementById('incidentTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            const searchTerm = document.getElementById('incidentSearch').value.toLowerCase();
+            const severityFilter = document.getElementById('incidentSeverityFilter').value;
+            const statusFilter = document.getElementById('incidentStatusFilter').value;
+
+            incidents.filter(incident => {
+                const matchesSearch = searchTerm === '' ||
+                                      incident.id.toLowerCase().includes(searchTerm) ||
+                                      incident.source.toLowerCase().includes(searchTerm) ||
+                                      incident.assigned.toLowerCase().includes(searchTerm) ||
+                                      getUserPosition(incident.assigned).toLowerCase().includes(searchTerm); // Search by position
+                const matchesSeverity = severityFilter === '' || incident.severity === severityFilter;
+                const matchesStatus = statusFilter === '' || incident.status === statusFilter;
+                return matchesSearch && matchesSeverity && matchesStatus;
+            })
+            .forEach(incident => {
+                const row = tableBody.insertRow();
+                // Determine Bootstrap badge class based on severity
+                const severityClass = `badge-${incident.severity.toLowerCase()}`;
+                // Determine Bootstrap badge class based on status using the new helper function
+                const statusClass = getStatusBadgeClass(incident.status);
+
+                row.innerHTML = `
+                    <td>${incident.id}</td>
+                    <td><span class="badge ${severityClass}">${incident.severity}</span></td>
+                    <td><span class="badge ${statusClass}">${incident.status}</span></td>
+                    <td>${incident.source}</td>
+                    <td>${incident.assigned} (${getUserPosition(incident.assigned)})</td>
+                    <td>${incident.lastUpdated}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info rounded-pill view-incident-btn" data-id="${incident.id}" title="View Incident Details">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                `;
+            });
+
+            // Add event listeners to "View" buttons for Incident Details Modal
+            document.querySelectorAll('.view-incident-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const incidentId = event.currentTarget.dataset.id;
+                    const incident = incidents.find(inc => inc.id === incidentId);
+                    if (incident) {
+                        // Populate modal content
+                        document.getElementById('modalIncidentId').textContent = incident.id;
+                        document.getElementById('modalSeverity').textContent = incident.severity;
+                        document.getElementById('modalSeverity').className = `badge rounded-pill badge-${incident.severity.toLowerCase()}`; // Update class for color
+                        
+                        // Apply specific status badge class to modal status
+                        const modalStatusElement = document.getElementById('modalStatus');
+                        modalStatusElement.textContent = incident.status;
+                        modalStatusElement.className = `badge rounded-pill ${getStatusBadgeClass(incident.status)}`;
+                        
+                        document.getElementById('modalSource').textContent = incident.source;
+                        document.getElementById('modalAssigned').textContent = `${incident.assigned} (${getUserPosition(incident.assigned)})`; // Display name and position
+                        document.getElementById('modalDescription').textContent = incident.description;
+                        document.getElementById('modalAffectedAssets').textContent = incident.affectedAssets;
+                        document.getElementById('modalEvidence').textContent = incident.evidence;
+                        document.getElementById('modalActionsTaken').textContent = incident.actionsTaken;
+
+                        // Show the modal
+                        const incidentModal = new bootstrap.Modal(document.getElementById('incidentDetailsModal'));
+                        incidentModal.show();
+                    }
+                });
+            });
+        }
+
+        /**
+         * Populates the "Reports Awaiting Validation (For Alex)" table.
+         * Only shows reports that are 'Needs More Info' or 'Rejected' and were submitted by Alex.
+         */
+        function renderPendingReportsForAlex() {
+            const tableBody = document.getElementById('reportTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            const searchTerm = document.getElementById('reportSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('reportTypeFilter').value;
+            const criticalityFilter = document.getElementById('reportCriticalityFilter').value;
+            const validationStatusFilter = document.getElementById('reportValidationStatusFilter').value;
+
+            // Filter for reports that are 'Needs More Info' or 'Rejected' AND submitted by CURRENT_ANALYST
+            const pendingReportsForAlex = allReports.filter(report => {
+                const isPendingReview = (report.validationStatus === 'Needs More Info' || report.validationStatus === 'Rejected');
+                const isSubmittedByAlex = report.submittedBy === CURRENT_ANALYST;
+
+                const matchesSearch = searchTerm === '' ||
+                                      report.id.toLowerCase().includes(searchTerm) ||
+                                      report.submittedBy.toLowerCase().includes(searchTerm);
+                const matchesType = typeFilter === '' || report.type === typeFilter;
+                const matchesCriticality = criticalityFilter === '' || report.criticality === criticalityFilter;
+                // Only show reports with 'Needs More Info' or 'Rejected' for Alex if a filter is not specifically set to 'Accepted'
+                const matchesValidationFilter = (validationStatusFilter === '' || isPendingReview && validationStatusFilter !== 'Accepted');
+                
+                return isPendingReview && isSubmittedByAlex && matchesSearch && matchesType && matchesCriticality && matchesValidationFilter;
+            });
+            
+            pendingReportsForAlex.forEach(report => {
+                let statusClass = '';
+                if (report.validationStatus === 'Accepted') {
+                    statusClass = 'badge-accepted';
+                } else if (report.validationStatus === 'Rejected') {
+                    statusClass = 'badge-rejected';
+                } else if (report.validationStatus === 'Needs More Info') {
+                    statusClass = 'badge-needs-more-info';
+                } else {
+                    statusClass = 'badge-pending-review';
+                }
+
+                const criticalityClass = `badge-${report.criticality ? report.criticality.toLowerCase().replace(' ', '-') : 'info-status'}`;
+                const priorityClass = getPriorityBadgeClass(report.priority); // Use new priority badge class
+
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${report.id}</td>
+                    <td>
+                        ${report.type}
+                        <i class="fas fa-info-circle info-icon" data-bs-toggle="modal" data-bs-target="#reportGuidelinesModal" data-report-type="${report.type}" title="Click to view acceptance criteria for ${report.type}"></i>
+                    </td>
+                    <td>${report.submittedBy}</td>
+                    <td>${report.submissionDate}</td>
+                    <td><span class="badge ${criticalityClass}">${report.criticality || 'N/A'}</span></td>
+                    <td><span class="badge ${priorityClass}">${report.priority || 'N/A'}</span></td>
+                    <td>${report.positiveness || 'N/A'}</td>
+                    <td>
+                        <span class="badge ${statusClass}">${report.validationStatus || 'Pending Review'}</span>
+                        ${report.feedback ? `<div class="report-feedback ${report.validationStatus === 'Needs More Info' ? 'missing' : report.validationStatus === 'Rejected' ? 'rejected' : ''}">${report.feedback}</div>` : ''}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info rounded-pill view-report-btn me-1" data-id="${report.id}" title="View this report">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-warning rounded-pill reevaluate-report-btn me-1" data-id="${report.id}" title="Edit and Re-evaluate this report">
+                            <i class="fas fa-edit"></i> Re-evaluate
+                        </button>
+                        <button class="btn btn-sm btn-secondary rounded-pill set-priority-btn" data-id="${report.id}" title="Set Report Priority">
+                            <i class="fas fa-arrow-up"></i> Priority
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        /**
+         * Populates the "All Accepted Reports" table.
+         */
+        function renderAllAcceptedReports() {
+            const tableBody = document.getElementById('allAcceptedReportsTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            // Filter for reports that are 'Accepted'
+            const acceptedReports = allReports.filter(report => report.validationStatus === 'Accepted');
+            
+            acceptedReports.forEach(report => {
+                let statusClass = 'badge-accepted'; // Will always be accepted
+                const criticalityClass = `badge-${report.criticality ? report.criticality.toLowerCase().replace(' ', '-') : 'info-status'}`;
+                const priorityClass = getPriorityBadgeClass(report.priority); // Use new priority badge class
+
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${report.id}</td>
+                    <td>${report.type}</td>
+                    <td>${report.submittedBy}</td>
+                    <td>${report.submissionDate}</td>
+                    <td><span class="badge ${criticalityClass}">${report.criticality || 'N/A'}</span></td>
+                    <td><span class="badge ${priorityClass}">${report.priority || 'N/A'}</span></td>
+                    <td><span class="badge text-bg-info">${report.positiveness || 'N/A'}</span></td>
+                    <td><span class="badge ${statusClass}">${report.validationStatus}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-info rounded-pill view-report-btn" data-id="${report.id}" title="View this report">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                `;
+            });
+
+            // Ensure event listeners are attached to all view buttons
+            attachReportEventListeners();
+        }
+
+        /**
+         * Attaches event listeners for view and re-evaluate buttons on reports.
+         * This is called after rendering both tables.
+         */
+        function attachReportEventListeners() {
+            // Add event listeners for info icons to show report guidelines
+            document.querySelectorAll('#report-validation .info-icon').forEach(icon => {
+                icon.onclick = (event) => { // Use onclick to prevent multiple listeners
+                    // Dynamically get the data-report-type from the clicked icon.
+                    // If no specific type is defined, it defaults to 'general' for the table header.
+                    const reportType = event.currentTarget.dataset.reportType;
+                    const guidelinesContent = reportGuidelines[reportType]; // This now correctly accesses the object
+
+                    document.getElementById('reportGuidelinesModalLabel').textContent = `${reportType} Acceptance Criteria`;
+                    document.getElementById('reportGuidelinesContent').innerHTML = `<p>${guidelinesContent.description}</p>${guidelinesContent.criteria}`;
+                };
+            });
+
+            // Add event listeners for "View" buttons (from both tables)
+            document.querySelectorAll('.view-report-btn').forEach(button => {
+                button.onclick = (event) => { // Use onclick to prevent multiple listeners
+                    const reportId = event.currentTarget.dataset.id;
+                    const report = allReports.find(r => r.id === reportId);
+                    if (report) {
+                        document.getElementById('modalReportId').textContent = report.id;
+                        document.getElementById('modalReportType').textContent = report.type;
+                        document.getElementById('modalReportSubmittedBy').textContent = report.submittedBy;
+                        document.getElementById('modalReportSubmissionDate').textContent = report.submissionDate;
+                        document.getElementById('modalReportSubmittedTo').textContent = report.submitTo || 'N/A';
+                        document.getElementById('modalReportContent').textContent = report.content;
+
+                        const modalCriticalityElement = document.getElementById('modalReportCriticality');
+                        modalCriticalityElement.textContent = report.criticality || 'N/A';
+                        modalCriticalityElement.className = `badge rounded-pill badge-${report.criticality ? report.criticality.toLowerCase().replace(' ', '-') : 'info-status'}`;
+                        
+                        const modalPriorityElement = document.getElementById('modalReportPriority'); // New element
+                        modalPriorityElement.textContent = report.priority || 'N/A';
+                        modalPriorityElement.className = `badge rounded-pill ${getPriorityBadgeClass(report.priority)}`;
+
+                        document.getElementById('modalReportPositiveness').textContent = report.positiveness || 'N/A';
+
+                        const validationStatusElement = document.getElementById('modalReportValidationStatus');
+                        validationStatusElement.textContent = report.validationStatus || 'Pending Review';
+                        validationStatusElement.className = `badge rounded-pill `;
+                        if (report.validationStatus === 'Accepted') {
+                            validationStatusElement.classList.add('badge-accepted');
+                        } else if (report.validationStatus === 'Rejected') {
+                            validationStatusElement.classList.add('badge-rejected');
+                        } else if (report.validationStatus === 'Needs More Info') {
+                            validationStatusElement.classList.add('badge-needs-more-info');
+                        } else {
+                            validationStatusElement.classList.add('badge-pending-review');
+                        }
+
+                        const feedbackElement = document.getElementById('modalReportFeedback');
+                        feedbackElement.innerHTML = report.feedback;
+                        feedbackElement.className = `report-feedback mt-3`;
+                        if (report.validationStatus === 'Needs More Info') {
+                            feedbackElement.classList.add('missing');
+                        } else if (report.validationStatus === 'Rejected') {
+                            feedbackElement.classList.add('rejected');
+                        }
+
+                        const reportModal = new bootstrap.Modal(document.getElementById('reportViewModal'));
+                        reportModal.show();
+                    }
+                };
+            });
+
+            // Add event listeners for "Re-evaluate" buttons (only in the "Reports Awaiting Validation" table)
+            document.querySelectorAll('.reevaluate-report-btn').forEach(button => {
+                button.onclick = (event) => { // Use onclick to prevent multiple listeners
+                    const reportId = event.currentTarget.dataset.id;
+                    const reportToEdit = allReports.find(r => r.id === reportId);
+                    if (reportToEdit) {
+                        document.getElementById('reportIdToEdit').value = reportToEdit.id;
+                        document.getElementById('reportType').value = reportToEdit.type;
+                        document.getElementById('reportCriticality').value = reportToEdit.criticality || '';
+                        document.getElementById('reportPriority').value = reportToEdit.priority || ''; // Set priority value
+                        document.getElementById('reportPositiveness').value = reportToEdit.positiveness || 'True Positive';
+                        
+                        // Set linked incident ID if it exists
+                        const linkedIncidentIdSelect = document.getElementById('linkedIncidentId');
+                        if (linkedIncidentIdSelect) {
+                            linkedIncidentIdSelect.value = reportToEdit.linkedIncidentId || '';
+                            if (reportToEdit.type === 'Incident Report') {
+                                document.getElementById('incidentIdSelectGroup').style.display = 'block';
+                                populateIncidentIdDropdown(); // Re-populate to ensure all options are there
+                            } else {
+                                document.getElementById('incidentIdSelectGroup').style.display = 'none';
+                            }
+                        }
+
+                        // Ensure submitTo field is populated if it exists
+                        const submitToInput = document.getElementById('submitTo');
+                        if (submitToInput) { // Check if element exists
+                            submitToInput.value = reportToEdit.submitTo || '';
+                        }
+                        
+                        document.getElementById('reportContent').value = reportToEdit.content;
+                        document.getElementById('reportSubmissionCardHeader').textContent = `Re-evaluate Report: ${reportToEdit.id}`;
+                        document.getElementById('submitReportButton').textContent = `Re-evaluate Report`;
+
+                        updateCriticalityColorDisplay(); // Update form's criticality color
+                        updatePriorityColorDisplay(); // Update form's priority color
+
+                        document.getElementById('submit-report').scrollIntoView({ behavior: 'smooth' });
+                        document.getElementById('reportContent').focus();
+                    }
+                };
+            });
+
+            // Add event listeners for "Set Priority" buttons
+            document.querySelectorAll('.set-priority-btn').forEach(button => {
+                button.onclick = (event) => {
+                    const reportId = event.currentTarget.dataset.id;
+                    const report = allReports.find(r => r.id === reportId);
+                    if (report) {
+                        document.getElementById('modalSetPriorityReportId').value = report.id;
+                        document.getElementById('modalReportPrioritySelect').value = report.priority; // Set priority in modal
+
+                        const setPriorityModal = new bootstrap.Modal(document.getElementById('setPriorityModal'));
+                        setPriorityModal.show();
+                    }
+                };
+            });
+        }
+
+
+        // --- Report Submission Form Handling ---
+        document.getElementById('reportSubmissionForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const reportIdToEdit = document.getElementById('reportIdToEdit').value;
+            const reportType = document.getElementById('reportType').value;
+            const reportCriticality = document.getElementById('reportCriticality').value;
+            const reportPriority = parseInt(document.getElementById('reportPriority').value); // Parse as integer
+            const reportPositiveness = document.getElementById('reportPositiveness').value;
+            const submitTo = document.getElementById('submitTo').value; // Get value from dropdown
+
+            const reportContent = document.getElementById('reportContent').value;
+            const submissionDate = new Date().toISOString().split('T')[0]; // Current date
+            const linkedIncidentId = document.getElementById('linkedIncidentId') ? document.getElementById('linkedIncidentId').value : null;
+
+            let report;
+            let reportIndex = -1;
+
+            if (reportIdToEdit) {
+                // Editing an existing report
+                reportIndex = allReports.findIndex(r => r.id === reportIdToEdit);
+                if (reportIndex !== -1) {
+                    report = allReports[reportIndex];
+                    report.type = reportType;
+                    report.criticality = reportCriticality;
+                    report.priority = reportPriority; // Update priority
+                    report.positiveness = reportPositiveness;
+                    report.submitTo = submitTo;
+                    report.content = reportContent;
+                    report.submissionDate = submissionDate; // Update submission date on re-evaluation
+                    report.linkedIncidentId = (reportType === 'Incident Report' && linkedIncidentId) ? linkedIncidentId : null; // Update linked incident ID
+                } else {
+                    console.error(`Report with ID ${reportIdToEdit} not found for editing.`);
+                    return; // Exit if report not found
+                }
+            } else {
+                // Creating a new report
+                const newReportId = 'REP-' + (allReports.length + 1).toString().padStart(3, '0');
+                report = {
+                    id: newReportId,
+                    type: reportType,
+                    submittedBy: CURRENT_ANALYST, // Ensure submittedBy is correctly set
+                    submissionDate: submissionDate,
+                    criticality: reportCriticality,
+                    priority: reportPriority, // Set new priority
+                    positiveness: reportPositiveness,
+                    submitTo: submitTo,
+                    validationStatus: 'Pending Review', // Initial status before validation
+                    feedback: '',
+                    content: reportContent,
+                    linkedIncidentId: (reportType === 'Incident Report' && linkedIncidentId) ? linkedIncidentId : null // Set linked incident ID
+                };
+                allReports.push(report); // Add to allReports immediately
+                reportIndex = allReports.length - 1; // Get the index of the newly added report
+            }
+
+            // Perform automatic validation
+            const validationResult = autoValidateReport(report.type, report.content, report.criticality, report.priority, report.positiveness, report.linkedIncidentId);
+            // Update the report's validation status and feedback in allReports
+            allReports[reportIndex].validationStatus = validationResult.validationStatus;
+            allReports[reportIndex].feedback = validationResult.feedback;
+
+            // --- NEW LOGIC: Update Incident Status if Incident Report is Accepted ---
+            if (report.type === 'Incident Report' && report.validationStatus === 'Accepted' && report.linkedIncidentId) {
+                const linkedIncident = incidents.find(inc => inc.id === report.linkedIncidentId);
+                if (linkedIncident) {
+                    linkedIncident.status = 'Handed Over'; // Change the status to Handed Over
+                    linkedIncident.lastUpdated = new Date().toISOString().slice(0, 16).replace('T', ' '); // Update last updated time
+                    console.log(`Incident ${linkedIncident.id} status updated to 'Handed Over' due to accepted report ${report.id}.`);
+                }
+            }
+            // --- END NEW LOGIC ---
+
+            // --- New Logic: Remove other pending reports for the same incident if this one is accepted ---
+            if (report.validationStatus === 'Accepted' && report.type === 'Incident Report' && report.linkedIncidentId) {
+                const acceptedIncidentId = report.linkedIncidentId;
+                const acceptedReportId = report.id;
+
+                allReports = allReports.filter(r => {
+                    // Keep reports that are NOT for the same incident OR are not pending/rejected
+                    // OR are the very report that was just accepted.
+                    return !(r.linkedIncidentId === acceptedIncidentId &&
+                             (r.validationStatus === 'Needs More Info' || r.validationStatus === 'Rejected') &&
+                             r.id !== acceptedReportId);
+                });
+            }
+            // --- End New Logic ---
+
+
+            // Re-render reports tables and charts to reflect changes
+            renderIncidents(); // Re-render incidents table to reflect status changes
+            renderPendingReportsForAlex();
+            renderAllAcceptedReports();
+            updateReportCharts();
+            renderUserProfile(); // Update user profile stats after report submission
+
+            // Check if report was accepted and show the flag popup
+            if (report.validationStatus === 'Accepted' && report.submittedBy === CURRENT_ANALYST) {
+                const successFlagModal = new bootstrap.Modal(document.getElementById('successFlagModal'));
+                successFlagModal.show();
+            }
+
+            // Handle re-evaluation prompt for reports still needing work
+            if (report.validationStatus === 'Rejected' || report.validationStatus === 'Needs More Info') {
+                document.getElementById('revalModalReportId').textContent = report.id;
+                document.getElementById('revalModalStatusText').textContent = `Report ${report.id} ${report.validationStatus.toLowerCase()}!`;
+                document.getElementById('revalModalFeedback').textContent = report.feedback;
+
+                const reEvaluationModal = new bootstrap.Modal(document.getElementById('reEvaluationPromptModal'));
+                reEvaluationModal.show();
+
+                // Attach event listener for the re-evaluate button in the modal
+                document.getElementById('revalModalEditButton').onclick = () => {
+                    // Pre-fill form for re-evaluation
+                    document.getElementById('reportIdToEdit').value = report.id;
+                    document.getElementById('reportType').value = report.type;
+                    document.getElementById('reportCriticality').value = report.criticality || '';
+                    document.getElementById('reportPriority').value = report.priority || ''; // Set priority value
+                    document.getElementById('reportPositiveness').value = report.positiveness || 'True Positive';
+                    
+                    const linkedIncidentIdSelect = document.getElementById('linkedIncidentId');
+                    if (linkedIncidentIdSelect) {
+                        linkedIncidentIdSelect.value = report.linkedIncidentId || '';
+                        if (report.type === 'Incident Report') {
+                            document.getElementById('incidentIdSelectGroup').style.display = 'block';
+                            populateIncidentIdDropdown(); // Re-populate to ensure all options are there
+                        } else {
+                            document.getElementById('incidentIdSelectGroup').style.display = 'none';
+                        }
+                    }
+
+                    document.getElementById('submitTo').value = report.submitTo || ''; // Set submitTo dropdown
+                    document.getElementById('reportContent').value = report.content;
+                    document.getElementById('reportSubmissionCardHeader').textContent = `Re-evaluate Report: ${report.id}`;
+                    document.getElementById('submitReportButton').textContent = `Re-evaluate Report`;
+
+                    updateCriticalityColorDisplay(); // Update form's criticality color
+                    updatePriorityColorDisplay(); // Update form's priority color
+
+                    reEvaluationModal.hide(); // Hide the prompt modal
+                    document.getElementById('submit-report').scrollIntoView({ behavior: 'smooth' }); // Scroll to the form
+                    document.getElementById('reportContent').focus(); // Focus on content field
+                };
+            } else {
+                // If accepted, just reset the form immediately
+                this.reset();
+                document.getElementById('reportIdToEdit').value = ''; // Clear edit ID
+                document.getElementById('reportSubmissionCardHeader').textContent = `Submit New Security Report`;
+                document.getElementById('submitReportButton').textContent = `Submit Report`;
+                
+                document.getElementById('submitTo').value = ''; // Clear submit to dropdown for new reports
+                document.getElementById('reportCriticality').value = ''; // Clear criticality for new reports
+                document.getElementById('reportPriority').value = ''; // Clear priority for new reports
+                document.getElementById('reportPositiveness').value = 'True Positive'; // Reset positiveness for new reports
+                document.getElementById('linkedIncidentId').value = ''; // Clear linked incident ID
+                document.getElementById('incidentIdSelectGroup').style.display = 'none'; // Hide incident ID dropdown
+                updateCriticalityColorDisplay(); // Reset the form criticality color display
+                updatePriorityColorDisplay(); // Reset the form priority color display
+            }
+
+            // Scroll back to the report validation section to see the immediate feedback
+            document.getElementById('report-validation').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // --- Handle Save Priority Button in Modal ---
+        document.getElementById('savePriorityButton').addEventListener('click', () => {
+            const reportId = document.getElementById('modalSetPriorityReportId').value;
+            const newPriority = parseInt(document.getElementById('modalReportPrioritySelect').value); // Get new priority from modal
+
+            const reportIndex = allReports.findIndex(r => r.id === reportId);
+            if (reportIndex !== -1) {
+                allReports[reportIndex].priority = newPriority; // Update priority
+                // Re-render tables to show updated priority
+                renderPendingReportsForAlex();
+                renderAllAcceptedReports();
+                renderUserProfile(); // Update user profile stats after priority change
+                // Close the modal
+                const setPriorityModal = bootstrap.Modal.getInstance(document.getElementById('setPriorityModal'));
+                if (setPriorityModal) {
+                    setPriorityModal.hide();
+                }
+            } else {
+                console.error(`Report with ID ${reportId} not found for priority update.`);
+            }
+        });
+
+
+        // --- Dynamic behavior for Positiveness and Report Type ---
+        document.getElementById('reportPositiveness').addEventListener('change', function() {
+            const reportTypeSelect = document.getElementById('reportType');
+            if (this.value === 'False Positive') {
+                reportTypeSelect.value = 'False Positive Report';
+            } else if (reportTypeSelect.value === 'False Positive Report' && this.value === 'True Positive') {
+                // If user manually changes Positiveness to True Positive while Report Type is False Positive Report,
+                // keep the Report Type as is, but this might indicate a mismatch in user's intent.
+                // For this simulation, we'll let it be. A more complex system might block this or prompt.
+            }
+            // Re-evaluate visibility of linked incident ID dropdown after positiveness change
+            toggleIncidentIdDropdown();
+        });
+
+        document.getElementById('reportType').addEventListener('change', function() {
+            const positivenessSelect = document.getElementById('reportPositiveness');
+            if (this.value === 'False Positive Report') {
+                positivenessSelect.value = 'False Positive';
+            } else if (positivenessSelect.value === 'False Positive' && this.value !== 'False Positive Report') {
+                // If Report Type is changed away from 'False Positive Report' and Positiveness is 'False Positive'
+                // automatically reset Positiveness to 'True Positive' to avoid logical inconsistencies.
+                positivenessSelect.value = 'True Positive';
+            }
+            // Re-evaluate visibility of linked incident ID dropdown after report type change
+            toggleIncidentIdDropdown();
+        });
+
+        /**
+         * Populates the Incident ID dropdown with active/investigating incidents.
+         */
+        function populateIncidentIdDropdown() {
+            const linkedIncidentIdSelect = document.getElementById('linkedIncidentId');
+            // Store current selection before clearing
+            const currentSelectedId = linkedIncidentIdSelect.value;
+            linkedIncidentIdSelect.innerHTML = '<option value="">Select Incident ID</option>'; // Clear existing options
+
+            const relevantIncidents = incidents.filter(inc => 
+                inc.status === 'New' || inc.status === 'Investigating' || inc.status === 'In Progress'
+            );
+
+            relevantIncidents.forEach(inc => {
+                const option = document.createElement('option');
+                option.value = inc.id;
+                option.textContent = `${inc.id} - ${inc.description.substring(0, 50)}...`;
+                linkedIncidentIdSelect.appendChild(option);
+            });
+            // Restore previous selection if it's still a valid option
+            if (currentSelectedId && Array.from(linkedIncidentIdSelect.options).some(option => option.value === currentSelectedId)) {
+                linkedIncidentIdSelect.value = currentSelectedId;
+            } else {
+                linkedIncidentIdSelect.value = ''; // Reset if old selection is no longer valid
+            }
+        }
+
+        /**
+         * Toggles the visibility of the Incident ID dropdown based on report type.
+         */
+        function toggleIncidentIdDropdown() {
+            const reportType = document.getElementById('reportType').value;
+            const incidentIdSelectGroup = document.getElementById('incidentIdSelectGroup');
+            if (reportType === 'Incident Report') {
+                incidentIdSelectGroup.style.display = 'block';
+                populateIncidentIdDropdown(); // Populate when shown
+            } else {
+                incidentIdSelectGroup.style.display = 'none';
+                document.getElementById('linkedIncidentId').value = ''; // Clear selection when hidden
+            }
+        }
+
+
+        /**
+         * Updates the colored badge next to the 'Criticality' label in the submission form.
+         */
+        function updateCriticalityColorDisplay() {
+            const criticalitySelect = document.getElementById('reportCriticality');
+            const criticalityColorDisplay = document.getElementById('criticalityColorDisplay');
+            const selectedCriticality = criticalitySelect.value;
+
+            if (selectedCriticality) {
+                // Remove existing badge classes (e.g., badge-critical, badge-high)
+                criticalityColorDisplay.className = 'badge rounded-pill ms-2';
+                // Add the appropriate badge class based on selected criticality
+                criticalityColorDisplay.classList.add(`badge-${selectedCriticality.toLowerCase().replace(' ', '-')}`);
+                criticalityColorDisplay.textContent = selectedCriticality;
+            } else {
+                criticalityColorDisplay.className = 'badge rounded-pill ms-2'; // Reset to default empty state
+                criticalityColorDisplay.textContent = '';
+            }
+        }
+
+        /**
+         * Updates the colored badge next to the 'Priority' label in the submission form.
+         */
+        function updatePriorityColorDisplay() {
+            const prioritySelect = document.getElementById('reportPriority');
+            const priorityColorDisplay = document.getElementById('priorityColorDisplay');
+            const selectedPriority = prioritySelect.value;
+
+            if (selectedPriority) {
+                priorityColorDisplay.className = 'badge rounded-pill ms-2';
+                priorityColorDisplay.classList.add(getPriorityBadgeClass(selectedPriority));
+                priorityColorDisplay.textContent = selectedPriority;
+            } else {
+                priorityColorDisplay.className = 'badge rounded-pill ms-2'; // Reset to default empty state
+                priorityColorDisplay.textContent = '';
+            }
+        }
+
+        // Add event listener for criticality dropdown to update its colored display
+        document.getElementById('reportCriticality').addEventListener('change', updateCriticalityColorDisplay);
+        // Add event listener for priority dropdown to update its colored display
+        document.getElementById('reportPriority').addEventListener('change', updatePriorityColorDisplay);
+
+
+        // --- Chart.js Configuration and Rendering Functions ---
+        // All chart instances are declared globally and destroyed/recreated on updates to prevent memory leaks
+
+        let alertsTrendChart;
+        function createAlertsTrendChart() {
+            const ctx = document.getElementById('alertsTrendChart').getContext('2d');
+            if (alertsTrendChart) alertsTrendChart.destroy(); // Destroy previous instance if it exists
+            alertsTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Day -6', 'Day -5', 'Day -4', 'Day -3', 'Day -2', 'Day -1', 'Today'],
+                    datasets: [{
+                        label: 'Alerts Volume',
+                        data: [500, 550, 480, 620, 580, 700, 650], // Simulated data
+                        borderColor: '#007bff', // Bootstrap primary blue
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)', // Light transparent blue
+                        fill: true,
+                        tension: 0.4, // Smooth curves
+                        pointBackgroundColor: '#007bff',
+                        pointBorderColor: '#fff',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow canvas to resize freely within parent
+                    plugins: {
+                        legend: {
+                            display: false // No legend needed for single dataset
+                        },
+                        title: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            bodyFont: {
+                                size: 14
+                            },
+                            titleFont: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Alerts'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (Last 7 Days)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let incidentStatusChart;
+        function createIncidentStatusChart() {
+            const ctx = document.getElementById('incidentStatusChart').getContext('2d');
+            if (incidentStatusChart) incidentStatusChart.destroy();
+            const statuses = incidents.reduce((acc, inc) => {
+                acc[inc.status] = (acc[inc.status] || 0) + 1; // Count incidents by status
+                return acc;
+            }, {});
+
+            incidentStatusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statuses),
+                    datasets: [{
+                        data: Object.values(statuses),
+                        backgroundColor: ['#0d6efd', '#ffc107', '#28a745', '#6c757d', '#dc3545', '#6f42c1'], // Blue, Yellow, Green, Gray, Red, Purple (for Handed Over)
+                        hoverOffset: 8, // Larger hover offset for better interaction
+                        borderColor: '#fff', // White border between segments
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right', // Place legend on the right
+                            labels: {
+                                boxWidth: 20, // Make legend color boxes slightly wider
+                                padding: 15, // Padding between legend items
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed) {
+                                        label += context.parsed;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let alertCategoriesChart;
+        function createAlertCategoriesChart() {
+            const ctx = document.getElementById('alertCategoriesChart').getContext('2d');
+            if (alertCategoriesChart) alertCategoriesChart.destroy();
+            alertCategoriesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Malware', 'Brute Force', 'Unauthorized Access', 'Phishing', 'DDoS'],
+                    datasets: [{
+                        label: 'Number of Alerts',
+                        data: [150, 90, 75, 60, 30], // Simulated data
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)', // Red
+                            'rgba(255, 159, 64, 0.8)', // Orange
+                            'rgba(75, 192, 192, 0.8)', // Teal
+                            'rgba(54, 162, 235, 0.8)', // Blue
+                            'rgba(153, 102, 255, 0.8)' // Purple
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 5 // Rounded bar corners
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Horizontal bars
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: false, /* Set to false to avoid conflict with long labels */
+                                text: 'Category'
+                            },
+                            ticks: {
+                                autoSkip: true, // Allow Chart.js to automatically skip labels if they overlap
+                                maxRotation: 0, // Prevent label rotation
+                                minRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let alertSourceChart;
+        function createAlertSourceChart() {
+            const ctx = document.getElementById('alertSourceChart').getContext('2d');
+            if (alertSourceChart) alertSourceChart.destroy();
+            alertSourceChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['SIEM', 'EDR', 'IDS', 'Firewall', 'Cloud Logs'],
+                    datasets: [{
+                        data: [400, 250, 150, 100, 50], // Simulated data
+                        backgroundColor: [
+                            '#0d6efd', '#20c997', '#fd7e14', '#6610f2', '#17a2b8'
+                        ],
+                        hoverOffset: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 15,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        let attackerIPsChart;
+        function createAttackerIPsChart() {
+            const ctx = document.getElementById('attackerIPsChart').getContext('2d');
+            if (attackerIPsChart) attackerIPsChart.destroy();
+
+            // Updated attacker IPs and counts, adding 185.x.x.x
+            attackerIPsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['192.168.1.100', '172.16.0.5', '203.0.113.12', '10.0.0.8', '198.51.100.25', '185.x.x.x'],
+                    datasets: [{
+                        label: 'Attack Count',
+                        data: [75, 60, 45, 30, 20, 80], // Simulated data, 80 for 185.x.x.x
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)', // Light red
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Attacker IP'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let vulnerabilityStatusChart;
+        function createVulnerabilityStatusChart() {
+            const ctx = document.getElementById('vulnerabilityStatusChart').getContext('2d');
+            if (vulnerabilityStatusChart) vulnerabilityStatusChart.destroy();
+            vulnerabilityStatusChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low', 'Informational'],
+                    datasets: [{
+                        data: [5, 15, 30, 45, 20], // Simulated data
+                        backgroundColor: [
+                            '#dc3545', '#fd7e14', '#887a00', '#0d6efd', '#0e92a2' /* Darker Cyan */
+                        ],
+                        hoverOffset: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 15,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        let reportValidationTrendChart;
+        function createReportValidationTrendChart() {
+            const ctx = document.getElementById('reportValidationTrendChart').getContext('2d');
+            if (reportValidationTrendChart) reportValidationTrendChart.destroy();
+
+            // Calculate current day's validated and rejected reports for dynamic update, specifically for Alex's reports
+            const todayDate = new Date().toISOString().split('T')[0];
+            const alexReportsToday = allReports.filter(r => r.submittedBy === CURRENT_ANALYST && r.submissionDate === todayDate);
+            const acceptedToday = alexReportsToday.filter(r => r.validationStatus === 'Accepted').length;
+            const rejectedToday = alexReportsToday.filter(r => r.validationStatus === 'Rejected').length;
+            const needsMoreInfoToday = alexReportsToday.filter(r => r.validationStatus === 'Needs More Info').length;
+
+
+            reportValidationTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Day -6', 'Day -5', 'Day -4', 'Day -3', 'Day -2', 'Day -1', 'Today'],
+                    datasets: [
+                        {
+                            label: 'Accepted Reports',
+                            data: [3, 4, 2, 5, 3, 4, acceptedToday], // Dynamically updated 'Today'
+                            borderColor: '#28a745', // Green
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#28a745',
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Rejected Reports',
+                            data: [1, 0, 1, 0, 0, 1, rejectedToday], // Dynamically updated 'Today'
+                            borderColor: '#dc3545', // Red
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#dc3545',
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Needs More Info',
+                            data: [0, 1, 0, 1, 0, 0, needsMoreInfoToday], // Dynamically updated 'Today'
+                            borderColor: '#ffc107', // Yellow
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#ffc107',
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 15,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            bodyFont: {
+                                size: 14
+                            },
+                            titleFont: {
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: 6, // Adjust based on expected maximum values
+                            title: {
+                                display: true,
+                                text: 'Number of Reports'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let reportAcceptanceRateChart;
+        function createReportAcceptanceRateChart() {
+            const ctx = document.getElementById('reportAcceptanceRateChart').getContext('2d');
+            if (reportAcceptanceRateChart) reportAcceptanceRateChart.destroy();
+
+            // Filter reports by CURRENT_ANALYST for acceptance rate calculation
+            const analystReports = allReports.filter(r => r.submittedBy === CURRENT_ANALYST);
+            const totalReports = analystReports.length;
+            const acceptedReports = analystReports.filter(r => r.validationStatus === 'Accepted').length;
+            const rejectedReports = analystReports.filter(r => r.validationStatus === 'Rejected').length;
+            const needsMoreInfoReports = analystReports.filter(r => r.validationStatus === 'Needs More Info').length;
+            // The remaining are "pending review" or N/A, which might be new submissions awaiting first validation
+            const pendingReviews = analystReports.filter(r => r.validationStatus === 'N/A' || r.validationStatus === 'Pending Review').length;
+
+
+            reportAcceptanceRateChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Accepted', 'Needs More Info', 'Rejected', 'Pending Review'],
+                    datasets: [{
+                        data: [acceptedReports, needsMoreInfoReports, rejectedReports, pendingReviews],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#0d6efd'], // Green, Yellow, Red, Blue
+                        hoverOffset: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 15,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        title: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Updates both report-related charts when report data changes.
+         */
+        function updateReportCharts() {
+            createReportValidationTrendChart();
+            createReportAcceptanceRateChart();
+        }
+
+        let compliancePostureChart;
+        function createCompliancePostureChart() {
+            const ctx = document.getElementById('compliancePostureChart').getContext('2d');
+            if (compliancePostureChart) compliancePostureChart.destroy();
+            const complianceScore = 85; // Example score (0-100)
+            compliancePostureChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Compliant', 'Non-Compliant'],
+                    datasets: [{
+                        data: [complianceScore, 100 - complianceScore],
+                        backgroundColor: ['#28a745', '#dc3545'], // Green for compliant, Red for non-compliant
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '80%', // Make it look more like a gauge
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false // Disable tooltips for a cleaner gauge look
+                        }
+                    }
+                },
+                plugins: [{
+                    // Plugin to draw the percentage text in the center of the doughnut chart
+                    id: 'centerText',
+                    beforeDraw: function(chart) {
+                        const ctx = chart.ctx;
+                        const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                        const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                        ctx.save(); // Save the current context state
+                        ctx.font = 'bold 3.5em Inter, sans-serif'; // Larger, bold font
+                        ctx.fillStyle = '#28a745'; // Green color for the text
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(`${complianceScore}%`, centerX, centerY);
+                        ctx.restore(); // Restore the context state
+                    }
+                }]
+            });
+        }
+
+        let auditFindingsChart;
+        function createAuditFindingsChart() {
+            const ctx = document.getElementById('auditFindingsChart').getContext('2d');
+            if (auditFindingsChart) auditFindingsChart.destroy();
+            auditFindingsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        label: 'Number of Findings',
+                        data: [2, 7, 12, 5], // Simulated data
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)', // Red
+                            'rgba(253, 126, 20, 0.8)', // Orange
+                            'rgba(255, 193, 7, 0.8)', // Yellow
+                            'rgba(13, 110, 253, 0.8)' // Blue
+                        ],
+                        borderColor: [
+                            'rgba(220, 53, 69, 1)',
+                            'rgba(253, 126, 20, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(13, 110, 253, 1)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Severity'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Calculates the time remaining until a report is due.
+         * Assumes a 24-hour reporting window from lastUpdated.
+         * @param {string} lastUpdatedString - The last updated timestamp string (e.g., '2025-06-19 15:00').
+         * @returns {string} Formatted time remaining (e.g., "HHh MMm SSs" or "Due").
+         */
+        function calculateTimeRemaining(lastUpdatedString) {
+            const lastUpdated = new Date(lastUpdatedString.replace(' ', 'T') + ':00'); // Convert to ISO format for Date object
+            const dueDate = new Date(lastUpdated.getTime() + (24 * 60 * 60 * 1000)); // Add 24 hours
+            const now = new Date();
+
+            const timeLeftMs = dueDate.getTime() - now.getTime();
+
+            if (timeLeftMs <= 0) {
+                return "Due"; // Or "Overdue"
+            }
+
+            const hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeftMs % (1000 * 60)) / 1000);
+
+            // Pad with leading zeros if necessary
+            const formatNumber = (num) => String(num).padStart(2, '0');
+
+            return `${formatNumber(hours)}h ${formatNumber(minutes)}m ${formatNumber(seconds)}s`;
+        }
+
+
+        /**
+         * Renders the user profile section with dynamic statistics for Alex.
+         */
+        function renderUserProfile() {
+            // Get Alex's details from socUsers
+            const alexUser = socUsers.find(u => u.name === CURRENT_ANALYST);
+            if (alexUser) {
+                document.getElementById('alexPosition').textContent = alexUser.position;
+                document.getElementById('alexCompanyId').textContent = alexUser.companyId || 'N/A';
+                document.getElementById('alexCompanyMail').textContent = alexUser.companyMail || 'N/A';
+                document.getElementById('alexUserMail').textContent = alexUser.userMail || 'N/A';
+            }
+
+            // Count incidents assigned to Alex
+            const alexIncidents = incidents.filter(inc => inc.assigned === CURRENT_ANALYST);
+            const totalIncidentsAssigned = alexIncidents.length;
+            const activeIncidentsAssigned = alexIncidents.filter(inc => inc.status !== 'Resolved' && inc.status !== 'Closed' && inc.status !== 'Handed Over').length;
+            const resolvedIncidents = alexIncidents.filter(inc => inc.status === 'Resolved' || inc.status === 'Closed' || inc.status === 'Handed Over').length;
+
+            // Count reports submitted by Alex
+            const alexReports = allReports.filter(report => report.submittedBy === CURRENT_ANALYST);
+            const totalReportsSubmitted = alexReports.length;
+            const acceptedReports = alexReports.filter(report => report.validationStatus === 'Accepted').length;
+            const rejectedReports = alexReports.filter(report => report.validationStatus === 'Rejected' || report.validationStatus === 'Needs More Info').length;
+
+            document.getElementById('alexTotalIncidents').textContent = totalIncidentsAssigned;
+            document.getElementById('alexActiveIncidents').textContent = activeIncidentsAssigned;
+            document.getElementById('alexResolvedIncidents').textContent = resolvedIncidents;
+
+            document.getElementById('alexTotalReports').textContent = totalReportsSubmitted;
+            document.getElementById('alexAcceptedReports').textContent = acceptedReports;
+            document.getElementById('alexRejectedReports').textContent = rejectedReports;
+        }
+
+        // --- Initialize Dashboard and Login Logic on Window Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginPage = document.getElementById('loginPage');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            const loginForm = document.getElementById('loginForm');
+            const loginMessage = document.getElementById('loginMessage');
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+            const incidentNotificationModalElement = document.getElementById('incidentNotificationModal');
+            const incidentNotificationModal = new bootstrap.Modal(incidentNotificationModalElement);
+            let notificationIntervals = []; // To store intervals for time remaining updates
+
+            // Toggle password visibility
+            passwordToggle.addEventListener('click', () => {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    passwordToggle.classList.remove('fa-eye');
+                    passwordToggle.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    passwordToggle.classList.remove('fa-eye-slash');
+                    passwordToggle.classList.add('fa-eye');
+                }
+            });
+
+            // Handle Login Form Submission
+            loginForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Simulated login: Check for 'alex' and 'alex@bluecyber'
+                if (username === 'alex' && password === 'alex@bluecyber') {
+                    loginMessage.classList.add('d-none'); // Hide any previous error message
+                    loginPage.classList.add('d-none'); // Hide login page
+                    dashboardContainer.classList.remove('d-none'); // Show dashboard
+
+                    // Initialize dashboard elements after showing it
+                    renderIncidents();
+                    renderPendingReportsForAlex(); // Render pending reports for Alex
+                    renderAllAcceptedReports(); // Render all accepted reports
+                    renderUserProfile(); // Render Alex's user profile stats
+                    createAlertsTrendChart();
+                    createIncidentStatusChart();
+                    createAlertCategoriesChart();
+                    createAlertSourceChart();
+                    createAttackerIPsChart();
+                    createVulnerabilityStatusChart();
+                    createReportValidationTrendChart();
+                    createReportAcceptanceRateChart();
+                    createCompliancePostureChart();
+                    createAuditFindingsChart();
+                    document.getElementById('newAlerts').textContent = Math.floor(Math.random() * 200) + 50;
+                    updateCriticalityColorDisplay();
+                    updatePriorityColorDisplay(); // Initial call for new priority display
+                    toggleIncidentIdDropdown(); // Initial check for incident ID dropdown visibility
+
+                    // Update static alerts count in navbar with a random number (1-10)
+                    document.getElementById('navbarAlertsBadge').textContent = Math.floor(Math.random() * 10) + 1;
+
+                    // Clear all existing notification intervals before setting new ones
+                    notificationIntervals.forEach(intervalId => clearInterval(intervalId));
+                    notificationIntervals = [];
+
+                    // --- Show New Incidents Notification for Alex ---
+                    const alexAssignedIncidents = incidents.filter(inc =>
+                        (inc.assigned === CURRENT_ANALYST) &&
+                        (inc.status === 'Investigating' || inc.status === 'New' || inc.status === 'In Progress')
+                    );
+
+                    const incidentsNotificationContent = document.getElementById('incidentsNotificationContent');
+                    incidentsNotificationContent.innerHTML = ''; // Clear previous content
+
+                    if (alexAssignedIncidents.length > 0) {
+                        alexAssignedIncidents.forEach(inc => {
+                            const incidentDiv = document.createElement('div');
+                            incidentDiv.classList.add('mb-3');
+                            const severityClass = `badge-${inc.severity.toLowerCase()}`;
+                            // Directly embed the initial time calculation when creating the HTML
+                            const initialTime = calculateTimeRemaining(inc.lastUpdated);
+                            incidentDiv.innerHTML = `
+                                <h6 class="mb-1"><strong>${inc.id}: ${inc.description.substring(0, 100)}...</strong></h6>
+                                <div class="row">
+                                    <div class="col-sm-6"><strong>Criticality:</strong> <span class="badge rounded-pill ${severityClass}">${inc.severity}</span></div>
+                                    <div class="col-sm-6"><strong>Time Remaining for Report:</strong> <span id="notificationTimeRemaining-${inc.id}" class="text-danger fw-bold">${initialTime}</span></div>
+                                </div>
+                            `;
+                            incidentsNotificationContent.appendChild(incidentDiv);
+
+                            // Set up interval for each incident's time remaining
+                            const timeRemainingSpanId = `notificationTimeRemaining-${inc.id}`;
+                            const updateIncTimeRemaining = () => {
+                                const timeRemainingText = calculateTimeRemaining(inc.lastUpdated);
+                                const spanElement = document.getElementById(timeRemainingSpanId);
+                                if (spanElement) { // Ensure the element exists before updating
+                                    spanElement.textContent = timeRemainingText;
+                                } else {
+                                    // If element no longer exists (modal closed, DOM changed), clear its interval
+                                    clearInterval(thisIntervalId);
+                                }
+                            };
+                            const thisIntervalId = setInterval(updateIncTimeRemaining, 1000); // Capture interval ID
+                            notificationIntervals.push(thisIntervalId);
+                        });
+                        incidentNotificationModal.show();
+                    }
+
+                    // Handle sidebar navigation to show/hide sections
+                    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            document.querySelectorAll('main section').forEach(section => {
+                                section.classList.add('d-none'); // Hide all sections
+                            });
+                            document.querySelectorAll('.sidebar .nav-link').forEach(navLink => {
+                                navLink.classList.remove('active'); // Deactivate all sidebar links
+                            });
+
+                            const targetId = this.getAttribute('href').substring(1);
+                            document.getElementById(targetId).classList.remove('d-none'); // Show target section
+                            this.classList.add('active'); // Activate clicked link
+                        });
+                    });
+
+                } else {
+                    loginMessage.classList.remove('d-none'); // Show error message
+                }
+            });
+
+            // Handle Logout Button Click
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    dashboardContainer.classList.add('d-none'); // Hide dashboard
+                    loginPage.classList.remove('d-none'); // Show login page
+                    loginForm.reset(); // Clear login form fields
+                    loginMessage.classList.add('d-none'); // Hide any error messages
+                    // Reset password input type and icon
+                    passwordInput.type = 'password';
+                    passwordToggle.classList.remove('fa-eye-slash');
+                    passwordToggle.classList.add('fa-eye');
+
+                    // Clear all chart instances to free up memory
+                    if (alertsTrendChart) alertsTrendChart.destroy();
+                    if (incidentStatusChart) incidentStatusChart.destroy();
+                    if (alertCategoriesChart) alertCategoriesChart.destroy();
+                    if (alertSourceChart) alertSourceChart.destroy();
+                    if (attackerIPsChart) attackerIPsChart.destroy();
+                    if (vulnerabilityStatusChart) vulnerabilityStatusChart.destroy();
+                    if (reportValidationTrendChart) reportValidationTrendChart.destroy();
+                    if (reportAcceptanceRateChart) reportAcceptanceRateChart.destroy();
+                    if (compliancePostureChart) compliancePostureChart.destroy();
+                    if (auditFindingsChart) auditFindingsChart.destroy();
+
+                    // Clear all notification intervals
+                    notificationIntervals.forEach(intervalId => clearInterval(intervalId));
+                    notificationIntervals = []; // Reset the array
+                });
+            }
+
+            // Setup event listeners for filtering (only if dashboard is visible, which happens after login)
+            document.getElementById('incidentSearch').addEventListener('input', renderIncidents);
+            document.getElementById('incidentSeverityFilter').addEventListener('change', renderIncidents);
+            document.getElementById('incidentStatusFilter').addEventListener('change', renderIncidents);
+
+            // Report table filters now trigger re-render of both tables for consistency
+            document.getElementById('reportSearch').addEventListener('input', () => { renderPendingReportsForAlex(); renderAllAcceptedReports(); });
+            document.getElementById('reportTypeFilter').addEventListener('change', () => { renderPendingReportsForAlex(); renderAllAcceptedReports(); });
+            document.getElementById('reportCriticalityFilter').addEventListener('change', () => { renderPendingReportsForAlex(); renderAllAcceptedReports(); });
+            document.getElementById('reportValidationStatusFilter').addEventListener('change', () => { renderPendingReportsForAlex(); renderAllAcceptedReports(); });
+
+            // Initial calls to manage dropdown visibility and data
+            document.getElementById('reportType').addEventListener('change', toggleIncidentIdDropdown);
+            
+            // Initial call to hide dashboard and show login (already handled by d-none/d-flex in HTML)
+        });
+
+    </script>
+</body>
+</html>
