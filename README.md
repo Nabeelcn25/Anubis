@@ -1,0 +1,2 @@
+# Anubis
+tryhackme anubis room
